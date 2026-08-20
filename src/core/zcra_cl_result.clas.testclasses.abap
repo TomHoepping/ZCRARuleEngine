@@ -85,7 +85,8 @@ CLASS ltc_result IMPLEMENTATION.
       iv_row     = 2
       iv_field   = 'BIRTHDT' ).
 
-    DATA(ls_msg) = mo_cut->get_messages( )[ 1 ].
+    DATA(lt_msg) = mo_cut->get_messages( ).
+    DATA(ls_msg) = lt_msg[ 1 ].
     cl_abap_unit_assert=>assert_equals( act = ls_msg-parameter exp = 'CHILD_1' ).
     cl_abap_unit_assert=>assert_equals( act = ls_msg-row       exp = 2 ).
     cl_abap_unit_assert=>assert_equals( act = ls_msg-field     exp = 'BIRTHDT' ).

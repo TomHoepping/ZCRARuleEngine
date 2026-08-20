@@ -1,14 +1,12 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <abapGit version="v1.0.0" serializer="LCL_OBJECT_TABL" serializer_version="v1.0.0">
  <asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">
   <asx:values>
    <DD02V>
     <TABNAME>ZCRA_S_GRAPH</TABNAME>
     <TABCLASS>INTTAB</TABCLASS>
-    <DDLANGUAGE>E</DDLANGUAGE>
     <MASTERLANG>E</MASTERLANG>
     <EXCLASS>4</EXCLASS>
-    <DDTEXT>CRA Rule Engine: Person/Relation Graph (interim shell)</DDTEXT>
    </DD02V>
    <DD03P_TABLE>
     <DD03P>

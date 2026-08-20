@@ -10,6 +10,7 @@ class ZCRA_CX_ROOT definition
 
     methods constructor
       importing
+        !textid   like textid optional
         !previous like previous optional
         !iv_text  type string optional .
 
@@ -24,7 +25,7 @@ endclass.
 class ZCRA_CX_ROOT implementation.
 
   method constructor.
-    super->constructor( previous = previous ).
+    super->constructor( textid = textid previous = previous ).
     mv_text = iv_text.
   endmethod.
 

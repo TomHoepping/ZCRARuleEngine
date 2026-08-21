@@ -28,9 +28,13 @@ CLASS zcra_cl_demo_run IMPLEMENTATION.
     registry->register( process       = demo_process
                         determination = NEW zcra_cl_det_example( ) ).
 
-    " 2) In-Memory-Logger, um den Engine-Trace danach ausgeben zu können.
-    "    Für Ausgabe in SLG1 stattdessen NEW zcra_cl_log_bal( ) verwenden.
-    DATA(logger) = NEW zcra_cl_log_memory( ).
+    " 2) Logger auswählen (als Interface typisiert, damit beide Varianten mit
+    "    derselben Variablen kompilieren). Der In-Memory-Logger erlaubt die
+    "    Ausgabe des Engine-Trace weiter unten. Für persistente Protokollierung
+    "    in SLG1 (Objekt ZCRA, Unterobjekt RUN) die BAL-Zeile aktivieren; der
+    "    Konsolen-Trace entfällt dann (siehe INSTANCE-OF-Prüfung in Schritt 7).
+    DATA(logger) = CAST zcra_if_logger( NEW zcra_cl_log_memory( ) ).
+    " DATA(logger) = CAST zcra_if_logger( NEW zcra_cl_log_bal( ) ).   " -> SLG1
 
     " 3) Kontext — leerer Graph; das Beispiel-Flag startet ungesetzt.
     DATA(context) = NEW zcra_cl_context( ).
@@ -57,18 +61,25 @@ CLASS zcra_cl_demo_run IMPLEMENTATION.
     ENDLOOP.
     out->write( |STOP angefordert: { result->is_stop_requested( ) }   Fehler: { result->has_errors( ) }| ).
 
-    " 7) Vom In-Memory-Logger erfasster Engine-Trace.
-    out->write( `--- Engine-Trace ---` ).
-    LOOP AT logger->get_entries( ) INTO DATA(entry).
-      CASE entry-event.
-        WHEN zcra_cl_log_memory=>gc_event-rule.
-          out->write( |RULE      { entry-rule_id } (KIND { entry-kind }) applicable={ entry-applicable } msgs={ entry-msg_count }| ).
-        WHEN zcra_cl_log_memory=>gc_event-snapshot.
-          out->write( |SNAPSHOT  { entry-label }| ).
-        WHEN OTHERS.
-          out->write( |{ entry-event }| ).
-      ENDCASE.
-    ENDLOOP.
+    " 7) Engine-Trace — nur beim In-Memory-Logger verfügbar. Der BAL-Logger
+    "    schreibt stattdessen nach SLG1 (Transaktion SLG1, Objekt ZCRA/RUN) und
+    "    stellt die Ereignisse nicht im Speicher bereit.
+    IF logger IS INSTANCE OF zcra_cl_log_memory.
+      DATA(memory_logger) = CAST zcra_cl_log_memory( logger ).
+      out->write( `--- Engine-Trace ---` ).
+      LOOP AT memory_logger->get_entries( ) INTO DATA(entry).
+        CASE entry-event.
+          WHEN zcra_cl_log_memory=>gc_event-rule.
+            out->write( |RULE      { entry-rule_id } (KIND { entry-kind }) applicable={ entry-applicable } msgs={ entry-msg_count }| ).
+          WHEN zcra_cl_log_memory=>gc_event-snapshot.
+            out->write( |SNAPSHOT  { entry-label }| ).
+          WHEN OTHERS.
+            out->write( |{ entry-event }| ).
+        ENDCASE.
+      ENDLOOP.
+    ELSE.
+      out->write( `--- Engine-Trace: nur mit In-Memory-Logger verfügbar (BAL -> SLG1, Objekt ZCRA/RUN) ---` ).
+    ENDIF.
 
     " 8) Endzustand des Kontexts — die Transformation hat das Beispiel-Flag gekippt.
     out->write( `--- Endzustand Kontext ---` ).

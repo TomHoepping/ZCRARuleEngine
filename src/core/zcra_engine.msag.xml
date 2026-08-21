@@ -5,7 +5,7 @@
    <T100A>
     <ARBGB>ZCRA_ENGINE</ARBGB>
     <MASTERLANG>E</MASTERLANG>
-    <STEXT>CRA Rule Engine: messages</STEXT>
+    <STEXT>MSG Class for ZCRA Rule Engine</STEXT>
    </T100A>
    <T100>
     <T100>

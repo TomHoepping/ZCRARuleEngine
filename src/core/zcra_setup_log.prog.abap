@@ -2,55 +2,17 @@ REPORT zcra_setup_log.
 
 * One-time provisioning for the CRA Rule Engine logging infrastructure.
 * Creates (idempotently):
-*   - Message class ZCRA_ENGINE (via RPY_MESSAGE_ID_INSERT: TADIR + transport).
 *   - BAL log object ZCRA with subobjects RUN and RULE (SLG0 tables).
 * BAL objects are not abapGit-serializable, so this report is the git-tracked,
 * reproducible source of truth for their creation. Re-runnable safely.
+*
+* The message class ZCRA_ENGINE is provisioned separately via the abapGit
+* serialization zcra_engine.msag.xml (deserialized on gCTS pull). It is NOT
+* created here: RPY_MESSAGE_ID_INSERT returns name_not_allowed on this system.
 
-CONSTANTS: gc_msgid   TYPE arbgb    VALUE 'ZCRA_ENGINE',
-           gc_balobj  TYPE balobj-object VALUE 'ZCRA',
-           gc_transp  TYPE trkorr   VALUE 'S01K901334',
-           gc_devclas TYPE devclass VALUE 'ZCRA_RULE_ENGINE_CORE'.
+CONSTANTS: gc_balobj  TYPE balobj-object VALUE 'ZCRA'.
 
 START-OF-SELECTION.
-
-* ---------------------------------------------------------------------
-* Message class ZCRA_ENGINE
-* ---------------------------------------------------------------------
-  SELECT SINGLE arbgb FROM t100a INTO @DATA(lv_arbgb) WHERE arbgb = @gc_msgid.
-  IF sy-subrc <> 0.
-    DATA lt_source TYPE STANDARD TABLE OF t100.
-    lt_source = VALUE #(
-      sprsl = sy-langu arbgb = gc_msgid
-      ( msgnr = '000' text = '&1&2&3&4' )
-      ( msgnr = '001' text = 'Engine run started: process &1' )
-      ( msgnr = '002' text = 'Engine run finished: process &1' )
-      ( msgnr = '003' text = 'Rule &1 skipped by condition' )
-      ( msgnr = '004' text = 'Rule &1 requested stop' )
-      ( msgnr = '005' text = 'No rules for process &1 / kind &2' ) ).
-
-    CALL FUNCTION 'RPY_MESSAGE_ID_INSERT'
-      EXPORTING
-        development_class = gc_devclas
-        language          = sy-langu
-        message_id        = gc_msgid
-        r2_flag           = space
-        temporary         = space
-        title_string      = 'CRA Rule Engine: messages'
-        transport_number  = gc_transp
-      TABLES
-        source            = lt_source
-      EXCEPTIONS
-        already_exists    = 1
-        cancelled         = 2
-        name_not_allowed  = 3
-        permission_error  = 4
-        already_exist     = 5
-        OTHERS            = 6.
-    WRITE: / 'MSAG', gc_msgid, 'insert rc =', sy-subrc.
-  ELSE.
-    WRITE: / 'MSAG', gc_msgid, 'already exists'.
-  ENDIF.
 
 * ---------------------------------------------------------------------
 * BAL log object ZCRA + subobjects RUN, RULE

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<abapGit version="v1.0.0" serializer="LCL_OBJECT_MSAG" serializer_version="v1.0.0">
+ <asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">
+  <asx:values>
+   <T100A>
+    <ARBGB>ZCRA_ENGINE</ARBGB>
+    <MASTERLANG>E</MASTERLANG>
+    <STEXT>CRA Rule Engine: messages</STEXT>
+   </T100A>
+   <T100>
+    <T100>
+     <SPRSL>E</SPRSL>
+     <ARBGB>ZCRA_ENGINE</ARBGB>
+     <MSGNR>000</MSGNR>
+     <TEXT>&amp;1&amp;2&amp;3&amp;4</TEXT>
+    </T100>
+    <T100>
+     <SPRSL>E</SPRSL>
+     <ARBGB>ZCRA_ENGINE</ARBGB>
+     <MSGNR>001</MSGNR>
+     <TEXT>Engine run started: process &amp;1</TEXT>
+    </T100>
+    <T100>
+     <SPRSL>E</SPRSL>
+     <ARBGB>ZCRA_ENGINE</ARBGB>
+     <MSGNR>002</MSGNR>
+     <TEXT>Engine run finished: process &amp;1</TEXT>
+    </T100>
+    <T100>
+     <SPRSL>E</SPRSL>
+     <ARBGB>ZCRA_ENGINE</ARBGB>
+     <MSGNR>003</MSGNR>
+     <TEXT>Rule &amp;1 skipped by condition</TEXT>
+    </T100>
+    <T100>
+     <SPRSL>E</SPRSL>
+     <ARBGB>ZCRA_ENGINE</ARBGB>
+     <MSGNR>004</MSGNR>
+     <TEXT>Rule &amp;1 requested stop</TEXT>
+    </T100>
+    <T100>
+     <SPRSL>E</SPRSL>
+     <ARBGB>ZCRA_ENGINE</ARBGB>
+     <MSGNR>005</MSGNR>
+     <TEXT>No rules for process &amp;1 / kind &amp;2</TEXT>
+    </T100>
+   </T100>
+  </asx:values>
+ </asx:abap>
+</abapGit>

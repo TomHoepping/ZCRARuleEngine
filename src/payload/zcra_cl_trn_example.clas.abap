@@ -1,39 +1,40 @@
-"! Example TRANSFORMATION rule (payload shell / template for developers).
-"! Mutates the context: sets the sample flag (ZCRA_S_GRAPH-SHELL_PLACEHOLDER)
-"! to 'X' and records an info message. This is the minimal "do something to the
-"! data" example until the real data container is implemented. Kind =
-"! Transformation (D-33); the engine wraps this phase in a before/after snapshot.
-class zcra_cl_trn_example definition
-  public
-  final
-  create public
-  inheriting from zcra_cl_rule_base .
+"! Beispiel-TRANSFORMATIONSREGEL (Payload-Schablone für Entwickler).
+"! Verändert den Kontext: setzt das Beispiel-Flag (ZCRA_S_GRAPH-SHELL_PLACEHOLDER)
+"! auf 'X' und schreibt eine Info-Meldung. Dies ist das minimale "verändere die
+"! Daten"-Beispiel, bis der echte Datencontainer umgesetzt ist. KIND =
+"! Transformation (D-33); die Engine umschließt diese Phase mit einem
+"! Vorher/Nachher-Snapshot.
+CLASS zcra_cl_trn_example DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC
+  INHERITING FROM zcra_cl_rule_base.
 
-  public section.
-    methods zcra_if_rule~get_meta   redefinition .
-    methods zcra_if_rule~transform  redefinition .
-  protected section.
-  private section.
-endclass.
+  PUBLIC SECTION.
+    METHODS zcra_if_rule~get_meta  REDEFINITION.
+    METHODS zcra_if_rule~transform REDEFINITION.
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
 
 
 
-class zcra_cl_trn_example implementation.
+CLASS zcra_cl_trn_example IMPLEMENTATION.
 
-  method zcra_if_rule~get_meta.
-    rs_meta-rule_id = 'TRN_EXAMPLE'.
-    rs_meta-purpose = 'Example transformation: set the sample flag on the new graph'.
-    rs_meta-kind    = zcra_if_c_rule_kind=>transformation.
-  endmethod.
+  METHOD zcra_if_rule~get_meta.
+    result-rule_id = 'TRN_EXAMPLE'.
+    result-purpose = 'Beispieltransformation: setzt das Beispiel-Flag im neuen Graphen'.
+    result-kind    = zcra_if_c_rule_kind=>transformation.
+  ENDMETHOD.
 
-  method zcra_if_rule~transform.
-    data(lr_new) = io_context->get_new_graph_ref( ).
-    lr_new->shell_placeholder = 'X'.
-    io_result->add_message(
-      iv_type       = 'I'
-      iv_id         = 'ZCRA_ENGINE'
-      iv_number     = '011'
-      iv_message_v1 = |{ lr_new->shell_placeholder }| ).
-  endmethod.
+  METHOD zcra_if_rule~transform.
+    DATA(new_ref) = context->get_new_graph_ref( ).
+    new_ref->shell_placeholder = 'X'.
+    result->add_message(
+      severity   = 'I'
+      id         = 'ZCRA_ENGINE'
+      number     = '011'
+      message_v1 = |{ new_ref->shell_placeholder }| ).
+  ENDMETHOD.
 
-endclass.
+ENDCLASS.

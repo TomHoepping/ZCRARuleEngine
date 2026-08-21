@@ -1,26 +1,26 @@
-interface zcra_if_logger
-  public .
+INTERFACE zcra_if_logger
+  PUBLIC.
 
-  "! Log the start of an engine run for the given process.
-  methods start_run
-    importing
-      !iv_process type zcra_d_process_id .
-  "! Log the outcome of a single rule: its metadata, whether it applied,
-  "! any accumulated result messages, and whether it requested a stop.
-  methods log_rule
-    importing
-      !is_meta       type zcra_s_rule_meta
-      !iv_applicable type abap_bool
-      !io_result     type ref to zcra_cl_result .
-  "! Attach a JSON snapshot of the context graphs under a label
-  "! (e.g. BEFORE / AFTER a transformation phase).
-  methods snapshot
-    importing
-      !iv_label   type string
-      !io_context type ref to zcra_if_context .
-  "! Log the end of an engine run and persist the log (BAL impl).
-  methods end_run
-    importing
-      !iv_process type zcra_d_process_id .
+  "! Protokolliert den Start eines Engine-Laufs für den angegebenen Prozess.
+  METHODS start_run
+    IMPORTING
+      !process TYPE zcra_d_process_id.
+  "! Protokolliert das Ergebnis einer einzelnen Regel: Metadaten, ob sie angewandt wurde,
+  "! die bisher gesammelten Ergebnismeldungen und ob ein Abbruch angefordert wurde.
+  METHODS log_rule
+    IMPORTING
+      !meta       TYPE zcra_s_rule_meta
+      !applicable TYPE abap_bool
+      !result     TYPE REF TO zcra_cl_result.
+  "! Hängt einen JSON-Snapshot der Kontext-Graphen unter einem Label an
+  "! (z. B. BEFORE / AFTER einer Transformationsphase).
+  METHODS snapshot
+    IMPORTING
+      !label   TYPE string
+      !context TYPE REF TO zcra_if_context.
+  "! Protokolliert das Ende eines Engine-Laufs und sichert das Protokoll (BAL-Impl).
+  METHODS end_run
+    IMPORTING
+      !process TYPE zcra_d_process_id.
 
-endinterface.
+ENDINTERFACE.

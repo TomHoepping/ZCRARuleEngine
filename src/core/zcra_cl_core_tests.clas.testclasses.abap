@@ -1,262 +1,264 @@
-"! Configurable stub rule. Counts constructor calls (static) and per-instance
-"! executions so factory reuse can be observed end-to-end. A transform rule can
-"! optionally mutate the new graph so snapshot content capture is observable.
-class lcl_rule definition final.
-  public section.
-    interfaces zcra_if_rule.
-    class-data gv_created type i.
-    data mv_runs type i read-only.
-    methods constructor
-      importing
-        !iv_id         type zcra_d_rule_id
-        !iv_kind       type zcra_s_rule_meta-kind
-        !iv_applicable type abap_bool default abap_true
-        !iv_add_msg    type abap_bool default abap_false
-        !iv_stop       type abap_bool default abap_false
-        !iv_mutate     type abap_bool default abap_false.
-  private section.
-    data ms_meta       type zcra_s_rule_meta.
-    data mv_applicable type abap_bool.
-    data mv_add_msg    type abap_bool.
-    data mv_stop       type abap_bool.
-    data mv_mutate     type abap_bool.
-    methods act importing io_result type ref to zcra_cl_result.
-endclass.
+"! Konfigurierbare Stub-Regel. Zählt Konstruktoraufrufe (statisch) und je-Instanz-
+"! Ausführungen, sodass die Factory-Wiederverwendung durchgängig beobachtbar ist.
+"! Eine Transformationsregel kann optional den neuen Graphen ändern, damit die
+"! Snapshot-Inhaltserfassung beobachtbar ist.
+CLASS lcl_rule DEFINITION FINAL.
+  PUBLIC SECTION.
+    INTERFACES zcra_if_rule.
+    CLASS-DATA created TYPE i.
+    DATA runs TYPE i READ-ONLY.
+    METHODS constructor
+      IMPORTING
+        !id         TYPE zcra_d_rule_id
+        !kind       TYPE zcra_s_rule_meta-kind
+        !applicable TYPE abap_bool DEFAULT abap_true
+        !emit_msg   TYPE abap_bool DEFAULT abap_false
+        !do_stop    TYPE abap_bool DEFAULT abap_false
+        !mutate     TYPE abap_bool DEFAULT abap_false.
+  PRIVATE SECTION.
+    DATA meta       TYPE zcra_s_rule_meta.
+    DATA applicable TYPE abap_bool.
+    DATA emit_msg   TYPE abap_bool.
+    DATA do_stop    TYPE abap_bool.
+    DATA mutate     TYPE abap_bool.
+    METHODS act IMPORTING result TYPE REF TO zcra_cl_result.
+ENDCLASS.
 
-class lcl_rule implementation.
-  method constructor.
-    gv_created      = gv_created + 1.
-    ms_meta-rule_id = iv_id.
-    ms_meta-kind    = iv_kind.
-    mv_applicable   = iv_applicable.
-    mv_add_msg      = iv_add_msg.
-    mv_stop         = iv_stop.
-    mv_mutate       = iv_mutate.
-  endmethod.
-  method zcra_if_rule~get_meta.
-    rs_meta = ms_meta.
-  endmethod.
-  method zcra_if_rule~exec_condition.
-    rv_applicable = mv_applicable.
-  endmethod.
-  method zcra_if_rule~validate.
-    mv_runs = mv_runs + 1.
-    act( io_result ).
-  endmethod.
-  method zcra_if_rule~transform.
-    mv_runs = mv_runs + 1.
-    if mv_mutate = abap_true.
-      data(lr_new) = io_context->get_new_graph_ref( ).
-      lr_new->shell_placeholder = 'X'.
-    endif.
-    act( io_result ).
-  endmethod.
-  method act.
-    if mv_add_msg = abap_true.
-      io_result->add_message( iv_type = 'I' iv_id = 'ZCRA_ENGINE' iv_number = '000' ).
-    endif.
-    if mv_stop = abap_true.
-      io_result->request_stop( ).
-    endif.
-  endmethod.
-endclass.
-
-
-"! Determination backed by the real ZCRA_CL_RULE_FACTORY. On every get_rules
-"! it builds a fresh rule instance and passes it through the factory; a repeat
-"! run therefore hits the cache and reuses the first instance (D-21/D-39).
-class lcl_det_factory definition final.
-  public section.
-    interfaces zcra_if_determination.
-    methods constructor
-      importing !io_factory type ref to zcra_cl_rule_factory.
-    methods add
-      importing
-        !iv_type       type zcra_if_c_rule_type=>ty_type
-        !iv_name       type string
-        !iv_kind       type zcra_s_rule_meta-kind
-        !iv_applicable type abap_bool default abap_true
-        !iv_add_msg    type abap_bool default abap_false
-        !iv_stop       type abap_bool default abap_false
-        !iv_mutate     type abap_bool default abap_false.
-  private section.
-    types: begin of ty_cfg,
-             type       type zcra_if_c_rule_type=>ty_type,
-             name       type string,
-             id         type zcra_d_rule_id,
-             kind       type zcra_s_rule_meta-kind,
-             applicable type abap_bool,
-             add_msg    type abap_bool,
-             stop       type abap_bool,
-             mutate     type abap_bool,
-           end of ty_cfg.
-    data mo_factory type ref to zcra_cl_rule_factory.
-    data mt_cfg     type standard table of ty_cfg.
-endclass.
-
-class lcl_det_factory implementation.
-  method constructor.
-    mo_factory = io_factory.
-  endmethod.
-  method add.
-    append value #( type = iv_type name = iv_name id = conv #( iv_name )
-                    kind = iv_kind applicable = iv_applicable
-                    add_msg = iv_add_msg stop = iv_stop mutate = iv_mutate ) to mt_cfg.
-  endmethod.
-  method zcra_if_determination~has_rules.
-    rv_has = xsdbool( line_exists( mt_cfg[ type = iv_type ] ) ).
-  endmethod.
-  method zcra_if_determination~get_rules.
-    loop at mt_cfg into data(ls_cfg) where type = iv_type.
-      data(lo_fresh) = cast zcra_if_rule( new lcl_rule(
-        iv_id = ls_cfg-id iv_kind = ls_cfg-kind iv_applicable = ls_cfg-applicable
-        iv_add_msg = ls_cfg-add_msg iv_stop = ls_cfg-stop iv_mutate = ls_cfg-mutate ) ).
-      append mo_factory->get_or_put( iv_name = ls_cfg-name io_rule = lo_fresh ) to rt_rules.
-    endloop.
-  endmethod.
-endclass.
+CLASS lcl_rule IMPLEMENTATION.
+  METHOD constructor.
+    created         = created + 1.
+    meta-rule_id    = id.
+    meta-kind       = kind.
+    me->applicable  = applicable.
+    me->emit_msg    = emit_msg.
+    me->do_stop     = do_stop.
+    me->mutate      = mutate.
+  ENDMETHOD.
+  METHOD zcra_if_rule~get_meta.
+    result = meta.
+  ENDMETHOD.
+  METHOD zcra_if_rule~exec_condition.
+    result = me->applicable.
+  ENDMETHOD.
+  METHOD zcra_if_rule~validate.
+    me->runs = me->runs + 1.
+    act( result ).
+  ENDMETHOD.
+  METHOD zcra_if_rule~transform.
+    me->runs = me->runs + 1.
+    IF me->mutate = abap_true.
+      DATA(new_ref) = context->get_new_graph_ref( ).
+      new_ref->shell_placeholder = 'X'.
+    ENDIF.
+    act( result ).
+  ENDMETHOD.
+  METHOD act.
+    IF me->emit_msg = abap_true.
+      result->add_message( severity = 'I' id = 'ZCRA_ENGINE' number = '000' ).
+    ENDIF.
+    IF me->do_stop = abap_true.
+      result->request_stop( ).
+    ENDIF.
+  ENDMETHOD.
+ENDCLASS.
 
 
-class ltc_core definition final
-  for testing duration short risk level harmless.
+"! Determination auf Basis der echten ZCRA_CL_RULE_FACTORY. Bei jedem get_rules
+"! wird eine frische Regelinstanz erzeugt und durch die Factory geleitet; ein
+"! Wiederholungslauf trifft daher den Cache und verwendet die erste Instanz
+"! wieder (D-21/D-39).
+CLASS lcl_det_factory DEFINITION FINAL.
+  PUBLIC SECTION.
+    INTERFACES zcra_if_determination.
+    METHODS constructor
+      IMPORTING !factory TYPE REF TO zcra_cl_rule_factory.
+    METHODS add
+      IMPORTING
+        !rule_type  TYPE zcra_if_c_rule_type=>ty_type
+        !name       TYPE string
+        !kind       TYPE zcra_s_rule_meta-kind
+        !applicable TYPE abap_bool DEFAULT abap_true
+        !emit_msg   TYPE abap_bool DEFAULT abap_false
+        !do_stop    TYPE abap_bool DEFAULT abap_false
+        !mutate     TYPE abap_bool DEFAULT abap_false.
+  PRIVATE SECTION.
+    TYPES: BEGIN OF ty_cfg,
+             bucket     TYPE zcra_if_c_rule_type=>ty_type,
+             name       TYPE string,
+             id         TYPE zcra_d_rule_id,
+             kind       TYPE zcra_s_rule_meta-kind,
+             applicable TYPE abap_bool,
+             emit_msg   TYPE abap_bool,
+             do_stop    TYPE abap_bool,
+             mutate     TYPE abap_bool,
+           END OF ty_cfg.
+    DATA factory TYPE REF TO zcra_cl_rule_factory.
+    DATA configs TYPE STANDARD TABLE OF ty_cfg.
+ENDCLASS.
 
-  private section.
-    data mo_factory type ref to zcra_cl_rule_factory.
-    data mo_det     type ref to zcra_cl_determination.
-    data mo_log     type ref to zcra_cl_log_memory.
+CLASS lcl_det_factory IMPLEMENTATION.
+  METHOD constructor.
+    me->factory = factory.
+  ENDMETHOD.
+  METHOD add.
+    APPEND VALUE #( bucket = rule_type name = name id = CONV #( name )
+                    kind = kind applicable = applicable
+                    emit_msg = emit_msg do_stop = do_stop mutate = mutate ) TO configs.
+  ENDMETHOD.
+  METHOD zcra_if_determination~has_rules.
+    result = xsdbool( line_exists( configs[ bucket = rule_type ] ) ).
+  ENDMETHOD.
+  METHOD zcra_if_determination~get_rules.
+    LOOP AT configs INTO DATA(cfg) WHERE bucket = rule_type.
+      DATA(fresh) = CAST zcra_if_rule( NEW lcl_rule(
+        id = cfg-id kind = cfg-kind applicable = cfg-applicable
+        emit_msg = cfg-emit_msg do_stop = cfg-do_stop mutate = cfg-mutate ) ).
+      APPEND me->factory->get_or_put( name = cfg-name rule = fresh ) TO result.
+    ENDLOOP.
+  ENDMETHOD.
+ENDCLASS.
 
-    methods setup.
-    methods build importing io_det type ref to zcra_if_determination.
 
-    methods snapshot_captures_mutation for testing raising cx_static_check.
-    methods factory_reuses_instances   for testing raising cx_static_check.
-    methods stop_in_transform_skips_post for testing raising cx_static_check.
-    methods null_logger_default_runs   for testing raising cx_static_check.
-    methods accumulates_across_phases  for testing raising cx_static_check.
-endclass.
+CLASS ltc_core DEFINITION FINAL
+  FOR TESTING DURATION SHORT RISK LEVEL HARMLESS.
 
-class ltc_core implementation.
+  PRIVATE SECTION.
+    DATA factory TYPE REF TO zcra_cl_rule_factory.
+    DATA det     TYPE REF TO zcra_cl_determination.
+    DATA log     TYPE REF TO zcra_cl_log_memory.
 
-  method setup.
-    lcl_rule=>gv_created = 0.
-    mo_factory = new #( ).
-    mo_log     = new #( ).
-  endmethod.
+    METHODS setup.
+    METHODS build IMPORTING determination TYPE REF TO zcra_if_determination.
 
-  method build.
-    mo_det = new zcra_cl_determination( ).
-    mo_det->register( iv_process = zcra_if_c_process=>anerkennung io_det = io_det ).
-  endmethod.
+    METHODS snapshot_captures_mutation FOR TESTING RAISING cx_static_check.
+    METHODS factory_reuses_instances   FOR TESTING RAISING cx_static_check.
+    METHODS stop_in_transform_skips_post FOR TESTING RAISING cx_static_check.
+    METHODS null_logger_default_runs   FOR TESTING RAISING cx_static_check.
+    METHODS accumulates_across_phases  FOR TESTING RAISING cx_static_check.
+ENDCLASS.
 
-  method snapshot_captures_mutation.
-    data(lo_det) = new lcl_det_factory( mo_factory ).
-    lo_det->add( iv_type = zcra_if_c_rule_type=>validation_pre
-                 iv_name = 'VP' iv_kind = zcra_if_c_rule_kind=>validation ).
-    lo_det->add( iv_type = zcra_if_c_rule_type=>transformation
-                 iv_name = 'TR' iv_kind = zcra_if_c_rule_kind=>transformation
-                 iv_mutate = abap_true ).
-    build( lo_det ).
+CLASS ltc_core IMPLEMENTATION.
 
-    data(lo_engine) = new zcra_cl_engine(
-      io_determination = mo_det io_logger = mo_log ).
-    lo_engine->run( iv_process = zcra_if_c_process=>anerkennung
-                    io_context = new zcra_cl_context( ) ).
+  METHOD setup.
+    lcl_rule=>created = 0.
+    factory = NEW #( ).
+    log     = NEW #( ).
+  ENDMETHOD.
 
-    data(lt) = mo_log->get_entries( ).
-    data(lv_before) = lt[ event = zcra_cl_log_memory=>gc_event-snapshot label = 'BEFORE' ]-json.
-    data(lv_after)  = lt[ event = zcra_cl_log_memory=>gc_event-snapshot label = 'AFTER' ]-json.
+  METHOD build.
+    det = NEW zcra_cl_determination( ).
+    det->register( process = zcra_if_c_process=>anerkennung determination = determination ).
+  ENDMETHOD.
 
-    " BEFORE snapshot is frozen prior to the transform => no mutation marker.
+  METHOD snapshot_captures_mutation.
+    DATA(det_cfg) = NEW lcl_det_factory( factory ).
+    det_cfg->add( rule_type = zcra_if_c_rule_type=>validation_pre
+                  name = 'VP' kind = zcra_if_c_rule_kind=>validation ).
+    det_cfg->add( rule_type = zcra_if_c_rule_type=>transformation
+                  name = 'TR' kind = zcra_if_c_rule_kind=>transformation
+                  mutate = abap_true ).
+    build( det_cfg ).
+
+    DATA(engine) = NEW zcra_cl_engine(
+      determination = det logger = log ).
+    engine->run( process = zcra_if_c_process=>anerkennung
+                 context = NEW zcra_cl_context( ) ).
+
+    DATA(entries) = log->get_entries( ).
+    DATA(before_json) = entries[ event = zcra_cl_log_memory=>gc_event-snapshot label = 'BEFORE' ]-json.
+    DATA(after_json)  = entries[ event = zcra_cl_log_memory=>gc_event-snapshot label = 'AFTER' ]-json.
+
+    " Der BEFORE-Snapshot wird vor der Transformation eingefroren => keine Änderungsmarke.
     cl_abap_unit_assert=>assert_false(
-      act = xsdbool( lv_before cs 'X' ) msg = 'BEFORE snapshot must not contain the mutation' ).
-    " AFTER snapshot reflects the mutated new graph.
+      act = xsdbool( before_json CS 'X' ) msg = 'BEFORE-Snapshot darf die Änderung nicht enthalten' ).
+    " Der AFTER-Snapshot spiegelt den geänderten neuen Graphen wider.
     cl_abap_unit_assert=>assert_true(
-      act = xsdbool( lv_after cs 'X' ) msg = 'AFTER snapshot must capture the mutation' ).
-  endmethod.
+      act = xsdbool( after_json CS 'X' ) msg = 'AFTER-Snapshot muss die Änderung erfassen' ).
+  ENDMETHOD.
 
-  method factory_reuses_instances.
-    data(lo_det) = new lcl_det_factory( mo_factory ).
-    lo_det->add( iv_type = zcra_if_c_rule_type=>validation_pre
-                 iv_name = 'R' iv_kind = zcra_if_c_rule_kind=>validation ).
-    build( lo_det ).
+  METHOD factory_reuses_instances.
+    DATA(det_cfg) = NEW lcl_det_factory( factory ).
+    det_cfg->add( rule_type = zcra_if_c_rule_type=>validation_pre
+                  name = 'R' kind = zcra_if_c_rule_kind=>validation ).
+    build( det_cfg ).
 
-    data(lo_engine) = new zcra_cl_engine( io_determination = mo_det io_logger = mo_log ).
-    lo_engine->run( iv_process = zcra_if_c_process=>anerkennung io_context = new zcra_cl_context( ) ).
-    lo_engine->run( iv_process = zcra_if_c_process=>anerkennung io_context = new zcra_cl_context( ) ).
+    DATA(engine) = NEW zcra_cl_engine( determination = det logger = log ).
+    engine->run( process = zcra_if_c_process=>anerkennung context = NEW zcra_cl_context( ) ).
+    engine->run( process = zcra_if_c_process=>anerkennung context = NEW zcra_cl_context( ) ).
 
-    " Determination built a fresh instance for each of the two runs...
+    " Die Determination erzeugte für jeden der beiden Läufe eine frische Instanz...
     cl_abap_unit_assert=>assert_equals(
-      act = lcl_rule=>gv_created exp = 2 msg = 'determination should create per run' ).
-    " ...but the engine executed the ONE cached instance both times (D-21/D-39).
-    cl_abap_unit_assert=>assert_true( mo_factory->has( 'R' ) ).
-    data(lo_cached) = cast lcl_rule( mo_factory->get( 'R' ) ).
+      act = lcl_rule=>created exp = 2 msg = 'Determination sollte je Lauf erzeugen' ).
+    " ...aber die Engine führte beide Male die EINE gecachte Instanz aus (D-21/D-39).
+    cl_abap_unit_assert=>assert_true( factory->has( 'R' ) ).
+    DATA(cached) = CAST lcl_rule( factory->get( 'R' ) ).
     cl_abap_unit_assert=>assert_equals(
-      act = lo_cached->mv_runs exp = 2 msg = 'cached instance must be reused across runs' ).
-  endmethod.
+      act = cached->runs exp = 2 msg = 'gecachte Instanz muss über Läufe wiederverwendet werden' ).
+  ENDMETHOD.
 
-  method stop_in_transform_skips_post.
-    data(lo_det) = new lcl_det_factory( mo_factory ).
-    lo_det->add( iv_type = zcra_if_c_rule_type=>validation_pre
-                 iv_name = 'VP' iv_kind = zcra_if_c_rule_kind=>validation ).
-    lo_det->add( iv_type = zcra_if_c_rule_type=>transformation
-                 iv_name = 'TR1' iv_kind = zcra_if_c_rule_kind=>transformation iv_stop = abap_true ).
-    lo_det->add( iv_type = zcra_if_c_rule_type=>transformation
-                 iv_name = 'TR2' iv_kind = zcra_if_c_rule_kind=>transformation ).
-    lo_det->add( iv_type = zcra_if_c_rule_type=>validation_post
-                 iv_name = 'VO' iv_kind = zcra_if_c_rule_kind=>validation ).
-    build( lo_det ).
+  METHOD stop_in_transform_skips_post.
+    DATA(det_cfg) = NEW lcl_det_factory( factory ).
+    det_cfg->add( rule_type = zcra_if_c_rule_type=>validation_pre
+                  name = 'VP' kind = zcra_if_c_rule_kind=>validation ).
+    det_cfg->add( rule_type = zcra_if_c_rule_type=>transformation
+                  name = 'TR1' kind = zcra_if_c_rule_kind=>transformation do_stop = abap_true ).
+    det_cfg->add( rule_type = zcra_if_c_rule_type=>transformation
+                  name = 'TR2' kind = zcra_if_c_rule_kind=>transformation ).
+    det_cfg->add( rule_type = zcra_if_c_rule_type=>validation_post
+                  name = 'VO' kind = zcra_if_c_rule_kind=>validation ).
+    build( det_cfg ).
 
-    data(lo_engine) = new zcra_cl_engine( io_determination = mo_det io_logger = mo_log ).
-    data(lo_result) = lo_engine->run( iv_process = zcra_if_c_process=>anerkennung
-                                      io_context = new zcra_cl_context( ) ).
+    DATA(engine) = NEW zcra_cl_engine( determination = det logger = log ).
+    DATA(result) = engine->run( process = zcra_if_c_process=>anerkennung
+                                context = NEW zcra_cl_context( ) ).
 
-    cl_abap_unit_assert=>assert_true( lo_result->is_stop_requested( ) ).
-    data(lt) = mo_log->get_entries( ).
-    " TR2 (rest of transform phase) and VO (POST phase) must not run.
-    cl_abap_unit_assert=>assert_false( xsdbool( line_exists( lt[ rule_id = 'TR2' ] ) ) ).
-    cl_abap_unit_assert=>assert_false( xsdbool( line_exists( lt[ rule_id = 'VO' ] ) ) ).
-    " Both transform snapshots are still recorded around the (halted) phase.
+    cl_abap_unit_assert=>assert_true( result->is_stop_requested( ) ).
+    DATA(entries) = log->get_entries( ).
+    " TR2 (Rest der Transformationsphase) und VO (POST-Phase) dürfen nicht laufen.
+    cl_abap_unit_assert=>assert_false( xsdbool( line_exists( entries[ rule_id = 'TR2' ] ) ) ).
+    cl_abap_unit_assert=>assert_false( xsdbool( line_exists( entries[ rule_id = 'VO' ] ) ) ).
+    " Beide Transformations-Snapshots werden dennoch um die (angehaltene) Phase aufgezeichnet.
     cl_abap_unit_assert=>assert_equals(
-      act = mo_log->count( zcra_cl_log_memory=>gc_event-snapshot ) exp = 2 ).
-  endmethod.
+      act = log->count( zcra_cl_log_memory=>gc_event-snapshot ) exp = 2 ).
+  ENDMETHOD.
 
-  method null_logger_default_runs.
-    data(lo_det) = new lcl_det_factory( mo_factory ).
-    lo_det->add( iv_type = zcra_if_c_rule_type=>validation_pre
-                 iv_name = 'VP' iv_kind = zcra_if_c_rule_kind=>validation iv_add_msg = abap_true ).
-    build( lo_det ).
+  METHOD null_logger_default_runs.
+    DATA(det_cfg) = NEW lcl_det_factory( factory ).
+    det_cfg->add( rule_type = zcra_if_c_rule_type=>validation_pre
+                  name = 'VP' kind = zcra_if_c_rule_kind=>validation emit_msg = abap_true ).
+    build( det_cfg ).
 
-    " No logger supplied => engine must default to the no-op logger and still run.
-    data(lo_engine) = new zcra_cl_engine( io_determination = mo_det ).
-    data(lo_result) = lo_engine->run( iv_process = zcra_if_c_process=>anerkennung
-                                      io_context = new zcra_cl_context( ) ).
+    " Kein Logger übergeben => Engine muss auf den No-op-Logger zurückfallen und laufen.
+    DATA(engine) = NEW zcra_cl_engine( determination = det ).
+    DATA(result) = engine->run( process = zcra_if_c_process=>anerkennung
+                                context = NEW zcra_cl_context( ) ).
 
-    cl_abap_unit_assert=>assert_bound( lo_result ).
-    cl_abap_unit_assert=>assert_equals( act = lines( lo_result->get_messages( ) ) exp = 1 ).
-    cl_abap_unit_assert=>assert_false( lo_result->is_stop_requested( ) ).
-  endmethod.
+    cl_abap_unit_assert=>assert_bound( result ).
+    cl_abap_unit_assert=>assert_equals( act = lines( result->get_messages( ) ) exp = 1 ).
+    cl_abap_unit_assert=>assert_false( result->is_stop_requested( ) ).
+  ENDMETHOD.
 
-  method accumulates_across_phases.
-    data(lo_det) = new lcl_det_factory( mo_factory ).
-    lo_det->add( iv_type = zcra_if_c_rule_type=>validation_pre
-                 iv_name = 'VP' iv_kind = zcra_if_c_rule_kind=>validation iv_add_msg = abap_true ).
-    lo_det->add( iv_type = zcra_if_c_rule_type=>transformation
-                 iv_name = 'TR' iv_kind = zcra_if_c_rule_kind=>transformation iv_add_msg = abap_true ).
-    lo_det->add( iv_type = zcra_if_c_rule_type=>validation_post
-                 iv_name = 'VO' iv_kind = zcra_if_c_rule_kind=>validation iv_add_msg = abap_true ).
-    build( lo_det ).
+  METHOD accumulates_across_phases.
+    DATA(det_cfg) = NEW lcl_det_factory( factory ).
+    det_cfg->add( rule_type = zcra_if_c_rule_type=>validation_pre
+                  name = 'VP' kind = zcra_if_c_rule_kind=>validation emit_msg = abap_true ).
+    det_cfg->add( rule_type = zcra_if_c_rule_type=>transformation
+                  name = 'TR' kind = zcra_if_c_rule_kind=>transformation emit_msg = abap_true ).
+    det_cfg->add( rule_type = zcra_if_c_rule_type=>validation_post
+                  name = 'VO' kind = zcra_if_c_rule_kind=>validation emit_msg = abap_true ).
+    build( det_cfg ).
 
-    data(lo_engine) = new zcra_cl_engine( io_determination = mo_det io_logger = mo_log ).
-    data(lo_result) = lo_engine->run( iv_process = zcra_if_c_process=>anerkennung
-                                      io_context = new zcra_cl_context( ) ).
+    DATA(engine) = NEW zcra_cl_engine( determination = det logger = log ).
+    DATA(result) = engine->run( process = zcra_if_c_process=>anerkennung
+                                context = NEW zcra_cl_context( ) ).
 
-    " One message from each of the three phases.
-    cl_abap_unit_assert=>assert_equals( act = lines( lo_result->get_messages( ) ) exp = 3 ).
-    " Full event envelope present: START ... END.
-    data(lt) = mo_log->get_entries( ).
-    cl_abap_unit_assert=>assert_equals( act = lt[ 1 ]-event exp = zcra_cl_log_memory=>gc_event-start ).
+    " Je eine Meldung aus jeder der drei Phasen.
+    cl_abap_unit_assert=>assert_equals( act = lines( result->get_messages( ) ) exp = 3 ).
+    " Vollständige Ereignishülle vorhanden: START ... END.
+    DATA(entries) = log->get_entries( ).
+    cl_abap_unit_assert=>assert_equals( act = entries[ 1 ]-event exp = zcra_cl_log_memory=>gc_event-start ).
     cl_abap_unit_assert=>assert_equals(
-      act = lt[ lines( lt ) ]-event exp = zcra_cl_log_memory=>gc_event-end ).
-  endmethod.
+      act = entries[ lines( entries ) ]-event exp = zcra_cl_log_memory=>gc_event-end ).
+  ENDMETHOD.
 
-endclass.
+ENDCLASS.

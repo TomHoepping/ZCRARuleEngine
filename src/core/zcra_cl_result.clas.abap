@@ -1,88 +1,91 @@
-class ZCRA_CL_RESULT definition
-  public
-  create public .
+CLASS zcra_cl_result DEFINITION
+  PUBLIC
+  CREATE PUBLIC.
 
-  public section.
+  PUBLIC SECTION.
 
-    "! Add a message from individual fields. Node addressing follows D-45:
-    "! NODE_ID -> PARAMETER, ROW -> row index, FIELD -> field, TYPE -> severity.
-    methods add_message
-      importing
-        !iv_type       type bapiret2-type
-        !iv_id         type bapiret2-id
-        !iv_number     type bapiret2-number
-        !iv_message_v1 type bapiret2-message_v1 optional
-        !iv_message_v2 type bapiret2-message_v2 optional
-        !iv_message_v3 type bapiret2-message_v3 optional
-        !iv_message_v4 type bapiret2-message_v4 optional
-        !iv_node_id    type bapiret2-parameter optional
-        !iv_row        type bapiret2-row optional
-        !iv_field      type bapiret2-field optional .
-    "! Append a pre-built BAPIRET2 message.
-    methods add_bapiret
-      importing
-        !is_message type bapiret2 .
-    "! Request that the engine stop after the current rule.
-    methods request_stop .
-    "! Whether a stop has been requested.
-    methods is_stop_requested
-      returning value(rv_stop) type abap_bool .
-    "! Whether any accumulated message is an error ('E') or abort ('A').
-    methods has_errors
-      returning value(rv_has_errors) type abap_bool .
-    "! The accumulated messages.
-    methods get_messages
-      returning value(rt_messages) type bapiret2_tab .
+    "! Fügt eine Meldung aus Einzelfeldern hinzu. Die Knotenadressierung folgt D-45:
+    "! NODE_ID -> PARAMETER, ROW -> Zeilenindex, FIELD -> Feld, SEVERITY -> Meldungstyp.
+    "! @parameter severity   | Meldungstyp (E/W/I/A/S).
+    "! @parameter id         | Nachrichtenklasse.
+    "! @parameter number     | Nachrichtennummer.
+    "! @parameter node_id    | Knotenadresse (BAPIRET2-PARAMETER).
+    "! @parameter row        | Zeilenindex innerhalb des Knotens.
+    "! @parameter field      | Betroffenes Feld.
+    METHODS add_message
+      IMPORTING
+        !severity   TYPE bapiret2-type
+        !id         TYPE bapiret2-id
+        !number     TYPE bapiret2-number
+        !message_v1 TYPE bapiret2-message_v1 OPTIONAL
+        !message_v2 TYPE bapiret2-message_v2 OPTIONAL
+        !message_v3 TYPE bapiret2-message_v3 OPTIONAL
+        !message_v4 TYPE bapiret2-message_v4 OPTIONAL
+        !node_id    TYPE bapiret2-parameter OPTIONAL
+        !row        TYPE bapiret2-row OPTIONAL
+        !field      TYPE bapiret2-field OPTIONAL.
+    "! Hängt eine bereits aufgebaute BAPIRET2-Meldung an.
+    METHODS add_bapiret
+      IMPORTING
+        !bapiret TYPE bapiret2.
+    "! Fordert an, dass die Engine nach der aktuellen Regel anhält.
+    METHODS request_stop.
+    "! Gibt an, ob ein Abbruch angefordert wurde.
+    METHODS is_stop_requested
+      RETURNING VALUE(result) TYPE abap_bool.
+    "! Gibt an, ob eine gesammelte Meldung ein Fehler ('E') oder Abbruch ('A') ist.
+    METHODS has_errors
+      RETURNING VALUE(result) TYPE abap_bool.
+    "! Die gesammelten Meldungen.
+    METHODS get_messages
+      RETURNING VALUE(result) TYPE bapiret2_tab.
 
-  protected section.
-  private section.
+  PROTECTED SECTION.
+  PRIVATE SECTION.
 
-    data mt_messages type bapiret2_tab .
-    data mv_stop type abap_bool .
+    DATA messages TYPE bapiret2_tab.
+    DATA stop_requested TYPE abap_bool.
 
-endclass.
+ENDCLASS.
 
 
 
-class ZCRA_CL_RESULT implementation.
+CLASS zcra_cl_result IMPLEMENTATION.
 
-  method add_message.
-    data ls_msg type bapiret2.
-    ls_msg-type       = iv_type.
-    ls_msg-id         = iv_id.
-    ls_msg-number     = iv_number.
-    ls_msg-message_v1 = iv_message_v1.
-    ls_msg-message_v2 = iv_message_v2.
-    ls_msg-message_v3 = iv_message_v3.
-    ls_msg-message_v4 = iv_message_v4.
-    ls_msg-parameter  = iv_node_id.
-    ls_msg-row        = iv_row.
-    ls_msg-field      = iv_field.
-    add_bapiret( ls_msg ).
-  endmethod.
+  METHOD add_message.
+    DATA msg TYPE bapiret2.
+    msg-type       = severity.
+    msg-id         = id.
+    msg-number     = number.
+    msg-message_v1 = message_v1.
+    msg-message_v2 = message_v2.
+    msg-message_v3 = message_v3.
+    msg-message_v4 = message_v4.
+    msg-parameter  = node_id.
+    msg-row        = row.
+    msg-field      = field.
+    add_bapiret( msg ).
+  ENDMETHOD.
 
-  method add_bapiret.
-    append is_message to mt_messages.
-  endmethod.
+  METHOD add_bapiret.
+    APPEND bapiret TO me->messages.
+  ENDMETHOD.
 
-  method request_stop.
-    mv_stop = abap_true.
-  endmethod.
+  METHOD request_stop.
+    me->stop_requested = abap_true.
+  ENDMETHOD.
 
-  method is_stop_requested.
-    rv_stop = mv_stop.
-  endmethod.
+  METHOD is_stop_requested.
+    result = me->stop_requested.
+  ENDMETHOD.
 
-  method has_errors.
-    loop at mt_messages transporting no fields
-      where type = 'E' or type = 'A'.
-      rv_has_errors = abap_true.
-      exit.
-    endloop.
-  endmethod.
+  METHOD has_errors.
+    result = xsdbool( line_exists( me->messages[ type = 'E' ] )
+                   OR line_exists( me->messages[ type = 'A' ] ) ).
+  ENDMETHOD.
 
-  method get_messages.
-    rt_messages = mt_messages.
-  endmethod.
+  METHOD get_messages.
+    result = me->messages.
+  ENDMETHOD.
 
-endclass.
+ENDCLASS.

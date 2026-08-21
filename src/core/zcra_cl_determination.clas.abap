@@ -1,84 +1,89 @@
-class zcra_cl_determination definition
-  public
-  create public .
+CLASS zcra_cl_determination DEFINITION
+  PUBLIC
+  CREATE PUBLIC.
 
-  public section.
+  PUBLIC SECTION.
 
-    "! Register a per-process determination. The instance is created by the
-    "! caller via direct NEW (no dynamic CREATE OBJECT). Re-registering a
-    "! process overwrites the previous mapping.
-    methods register
-      importing
-        !iv_process type zcra_d_process_id
-        !io_det     type ref to zcra_if_determination .
+    "! Registriert eine prozessspezifische Determination. Die Instanz wird vom
+    "! Aufrufer per direktem NEW erzeugt (kein dynamisches CREATE OBJECT). Eine
+    "! erneute Registrierung überschreibt die bisherige Zuordnung.
+    "! @parameter process       | Prozesskennung.
+    "! @parameter determination | Determination-Instanz für den Prozess.
+    METHODS register
+      IMPORTING
+        !process       TYPE zcra_d_process_id
+        !determination TYPE REF TO zcra_if_determination.
 
-    "! Whether the process provides rules for the given TYPE bucket.
-    methods has_rules
-      importing
-        !iv_process   type zcra_d_process_id
-        !iv_type      type zcra_if_c_rule_type=>ty_type
-      returning
-        value(rv_has) type abap_bool .
+    "! Gibt an, ob der Prozess Regeln für den angegebenen TYPE-Bucket liefert.
+    "! @parameter process   | Prozesskennung.
+    "! @parameter rule_type | Determination-Bucket.
+    "! @parameter result    | Wahr, wenn Regeln vorhanden sind.
+    METHODS has_rules
+      IMPORTING
+        !process      TYPE zcra_d_process_id
+        !rule_type    TYPE zcra_if_c_rule_type=>ty_type
+      RETURNING
+        VALUE(result) TYPE abap_bool.
 
-    "! Ordered rule instances for the process + TYPE bucket. Empty if the
-    "! process is not registered.
-    methods get_rules
-      importing
-        !iv_process     type zcra_d_process_id
-        !iv_type        type zcra_if_c_rule_type=>ty_type
-      returning
-        value(rt_rules) type zcra_if_determination=>tt_rules .
+    "! Geordnete Regelinstanzen für Prozess + TYPE-Bucket. Leer, wenn der
+    "! Prozess nicht registriert ist.
+    "! @parameter process   | Prozesskennung.
+    "! @parameter rule_type | Determination-Bucket.
+    "! @parameter result    | Geordnete Regelinstanzen.
+    METHODS get_rules
+      IMPORTING
+        !process      TYPE zcra_d_process_id
+        !rule_type    TYPE zcra_if_c_rule_type=>ty_type
+      RETURNING
+        VALUE(result) TYPE zcra_if_determination=>tt_rules.
 
-  protected section.
-  private section.
+  PROTECTED SECTION.
+  PRIVATE SECTION.
 
-    types:
-      begin of ty_registration,
-        process type zcra_d_process_id,
-        det     type ref to zcra_if_determination,
-      end of ty_registration .
+    TYPES:
+      BEGIN OF ty_registration,
+        process TYPE zcra_d_process_id,
+        det     TYPE REF TO zcra_if_determination,
+      END OF ty_registration.
 
-    data mt_registry type hashed table of ty_registration with unique key process .
+    DATA registry TYPE HASHED TABLE OF ty_registration WITH UNIQUE KEY process.
 
-    methods find
-      importing
-        !iv_process   type zcra_d_process_id
-      returning
-        value(ro_det) type ref to zcra_if_determination .
+    METHODS find
+      IMPORTING
+        !process      TYPE zcra_d_process_id
+      RETURNING
+        VALUE(result) TYPE REF TO zcra_if_determination.
 
-endclass.
+ENDCLASS.
 
 
 
-class zcra_cl_determination implementation.
+CLASS zcra_cl_determination IMPLEMENTATION.
 
-  method register.
-    data ls_reg type ty_registration.
-    ls_reg-process = iv_process.
-    ls_reg-det     = io_det.
-    delete mt_registry where process = iv_process.
-    insert ls_reg into table mt_registry.
-  endmethod.
+  METHOD register.
+    DATA registration TYPE ty_registration.
+    registration-process = process.
+    registration-det     = determination.
+    DELETE registry WHERE process = registration-process.
+    INSERT registration INTO TABLE registry.
+  ENDMETHOD.
 
-  method find.
-    read table mt_registry with key process = iv_process into data(ls_reg).
-    if sy-subrc = 0.
-      ro_det = ls_reg-det.
-    endif.
-  endmethod.
+  METHOD find.
+    result = VALUE #( registry[ process = process ]-det OPTIONAL ).
+  ENDMETHOD.
 
-  method has_rules.
-    data(lo_det) = find( iv_process ).
-    if lo_det is bound.
-      rv_has = lo_det->has_rules( iv_type ).
-    endif.
-  endmethod.
+  METHOD has_rules.
+    DATA(determination) = find( process ).
+    IF determination IS BOUND.
+      result = determination->has_rules( rule_type ).
+    ENDIF.
+  ENDMETHOD.
 
-  method get_rules.
-    data(lo_det) = find( iv_process ).
-    if lo_det is bound.
-      rt_rules = lo_det->get_rules( iv_type ).
-    endif.
-  endmethod.
+  METHOD get_rules.
+    DATA(determination) = find( process ).
+    IF determination IS BOUND.
+      result = determination->get_rules( rule_type ).
+    ENDIF.
+  ENDMETHOD.
 
-endclass.
+ENDCLASS.

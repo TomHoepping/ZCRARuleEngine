@@ -1,235 +1,235 @@
-"! Unit tests for ZCRA_CL_ENGINE: phase order, empty-phase skip, STOP
-"! short-circuit, snapshot capture, message accumulation, kind-vs-bucket.
-class ltc_engine definition final
-  for testing duration short risk level harmless.
+"! Unit-Tests für ZCRA_CL_ENGINE: Phasenreihenfolge, Überspringen leerer Phasen,
+"! STOP-Kurzschluss, Snapshot-Erfassung, Meldungssammlung, Kind-vs-Bucket.
+CLASS ltc_engine DEFINITION FINAL
+  FOR TESTING DURATION SHORT RISK LEVEL HARMLESS.
 
-  private section.
-    data mo_det    type ref to zcra_cl_determination.
-    data mo_log    type ref to zcra_cl_log_memory.
-    data mo_engine type ref to zcra_cl_engine.
+  PRIVATE SECTION.
+    DATA det    TYPE REF TO zcra_cl_determination.
+    DATA log    TYPE REF TO zcra_cl_log_memory.
+    DATA engine TYPE REF TO zcra_cl_engine.
 
-    methods setup.
-    methods build importing io_det type ref to zcra_if_determination.
+    METHODS setup.
+    METHODS build IMPORTING determination TYPE REF TO zcra_if_determination.
 
-    methods runs_phases_in_order   for testing raising cx_static_check.
-    methods skips_empty_transform  for testing raising cx_static_check.
-    methods stop_short_circuits    for testing raising cx_static_check.
-    methods accumulates_messages   for testing raising cx_static_check.
-    methods inapplicable_skipped   for testing raising cx_static_check.
-    methods kind_bucket_mismatch   for testing raising cx_static_check.
-endclass.
-
-
-"! Configurable stub rule.
-class lcl_rule definition final.
-  public section.
-    interfaces zcra_if_rule.
-    methods constructor
-      importing
-        !iv_id         type zcra_d_rule_id
-        !iv_kind       type zcra_s_rule_meta-kind
-        !iv_applicable type abap_bool default abap_true
-        !iv_add_msg    type abap_bool default abap_false
-        !iv_stop       type abap_bool default abap_false.
-  private section.
-    data ms_meta       type zcra_s_rule_meta.
-    data mv_applicable type abap_bool.
-    data mv_add_msg    type abap_bool.
-    data mv_stop       type abap_bool.
-    methods act importing io_result type ref to zcra_cl_result.
-endclass.
-
-class lcl_rule implementation.
-  method constructor.
-    ms_meta-rule_id = iv_id.
-    ms_meta-kind    = iv_kind.
-    mv_applicable   = iv_applicable.
-    mv_add_msg      = iv_add_msg.
-    mv_stop         = iv_stop.
-  endmethod.
-  method zcra_if_rule~get_meta.
-    rs_meta = ms_meta.
-  endmethod.
-  method zcra_if_rule~exec_condition.
-    rv_applicable = mv_applicable.
-  endmethod.
-  method zcra_if_rule~validate.
-    act( io_result ).
-  endmethod.
-  method zcra_if_rule~transform.
-    act( io_result ).
-  endmethod.
-  method act.
-    if mv_add_msg = abap_true.
-      io_result->add_message( iv_type = 'I' iv_id = 'ZCRA_ENGINE' iv_number = '000' ).
-    endif.
-    if mv_stop = abap_true.
-      io_result->request_stop( ).
-    endif.
-  endmethod.
-endclass.
+    METHODS runs_phases_in_order   FOR TESTING RAISING cx_static_check.
+    METHODS skips_empty_transform  FOR TESTING RAISING cx_static_check.
+    METHODS stop_short_circuits    FOR TESTING RAISING cx_static_check.
+    METHODS accumulates_messages   FOR TESTING RAISING cx_static_check.
+    METHODS inapplicable_skipped   FOR TESTING RAISING cx_static_check.
+    METHODS kind_bucket_mismatch   FOR TESTING RAISING cx_static_check.
+ENDCLASS.
 
 
-"! Determination stub with per-bucket rule lists.
-class lcl_det definition final.
-  public section.
-    interfaces zcra_if_determination.
-    methods set
-      importing
-        !iv_type  type zcra_if_c_rule_type=>ty_type
-        !it_rules type zcra_if_determination=>tt_rules.
-  private section.
-    data mt_pre  type zcra_if_determination=>tt_rules.
-    data mt_trn  type zcra_if_determination=>tt_rules.
-    data mt_post type zcra_if_determination=>tt_rules.
-    methods pick
-      importing !iv_type type zcra_if_c_rule_type=>ty_type
-      returning value(rt_rules) type zcra_if_determination=>tt_rules.
-endclass.
+"! Konfigurierbare Stub-Regel.
+CLASS lcl_rule DEFINITION FINAL.
+  PUBLIC SECTION.
+    INTERFACES zcra_if_rule.
+    METHODS constructor
+      IMPORTING
+        !id         TYPE zcra_d_rule_id
+        !kind       TYPE zcra_s_rule_meta-kind
+        !applicable TYPE abap_bool DEFAULT abap_true
+        !emit_msg   TYPE abap_bool DEFAULT abap_false
+        !do_stop    TYPE abap_bool DEFAULT abap_false.
+  PRIVATE SECTION.
+    DATA meta       TYPE zcra_s_rule_meta.
+    DATA applicable TYPE abap_bool.
+    DATA emit_msg   TYPE abap_bool.
+    DATA do_stop    TYPE abap_bool.
+    METHODS act IMPORTING result TYPE REF TO zcra_cl_result.
+ENDCLASS.
 
-class lcl_det implementation.
-  method set.
-    case iv_type.
-      when zcra_if_c_rule_type=>validation_pre.  mt_pre  = it_rules.
-      when zcra_if_c_rule_type=>transformation.  mt_trn  = it_rules.
-      when zcra_if_c_rule_type=>validation_post. mt_post = it_rules.
-    endcase.
-  endmethod.
-  method pick.
-    case iv_type.
-      when zcra_if_c_rule_type=>validation_pre.  rt_rules = mt_pre.
-      when zcra_if_c_rule_type=>transformation.  rt_rules = mt_trn.
-      when zcra_if_c_rule_type=>validation_post. rt_rules = mt_post.
-    endcase.
-  endmethod.
-  method zcra_if_determination~has_rules.
-    rv_has = xsdbool( lines( pick( iv_type ) ) > 0 ).
-  endmethod.
-  method zcra_if_determination~get_rules.
-    rt_rules = pick( iv_type ).
-  endmethod.
-endclass.
+CLASS lcl_rule IMPLEMENTATION.
+  METHOD constructor.
+    meta-rule_id    = id.
+    meta-kind       = kind.
+    me->applicable  = applicable.
+    me->emit_msg    = emit_msg.
+    me->do_stop     = do_stop.
+  ENDMETHOD.
+  METHOD zcra_if_rule~get_meta.
+    result = meta.
+  ENDMETHOD.
+  METHOD zcra_if_rule~exec_condition.
+    result = me->applicable.
+  ENDMETHOD.
+  METHOD zcra_if_rule~validate.
+    act( result ).
+  ENDMETHOD.
+  METHOD zcra_if_rule~transform.
+    act( result ).
+  ENDMETHOD.
+  METHOD act.
+    IF me->emit_msg = abap_true.
+      result->add_message( severity = 'I' id = 'ZCRA_ENGINE' number = '000' ).
+    ENDIF.
+    IF me->do_stop = abap_true.
+      result->request_stop( ).
+    ENDIF.
+  ENDMETHOD.
+ENDCLASS.
 
 
-class ltc_engine implementation.
+"! Determination-Stub mit bucketweisen Regellisten.
+CLASS lcl_det DEFINITION FINAL.
+  PUBLIC SECTION.
+    INTERFACES zcra_if_determination.
+    METHODS set
+      IMPORTING
+        !rule_type TYPE zcra_if_c_rule_type=>ty_type
+        !rules     TYPE zcra_if_determination=>tt_rules.
+  PRIVATE SECTION.
+    DATA rules_pre  TYPE zcra_if_determination=>tt_rules.
+    DATA rules_trn  TYPE zcra_if_determination=>tt_rules.
+    DATA rules_post TYPE zcra_if_determination=>tt_rules.
+    METHODS pick
+      IMPORTING !rule_type TYPE zcra_if_c_rule_type=>ty_type
+      RETURNING VALUE(result) TYPE zcra_if_determination=>tt_rules.
+ENDCLASS.
 
-  method setup.
-    mo_log = new zcra_cl_log_memory( ).
-  endmethod.
+CLASS lcl_det IMPLEMENTATION.
+  METHOD set.
+    CASE rule_type.
+      WHEN zcra_if_c_rule_type=>validation_pre.  rules_pre  = rules.
+      WHEN zcra_if_c_rule_type=>transformation.  rules_trn  = rules.
+      WHEN zcra_if_c_rule_type=>validation_post. rules_post = rules.
+    ENDCASE.
+  ENDMETHOD.
+  METHOD pick.
+    CASE rule_type.
+      WHEN zcra_if_c_rule_type=>validation_pre.  result = rules_pre.
+      WHEN zcra_if_c_rule_type=>transformation.  result = rules_trn.
+      WHEN zcra_if_c_rule_type=>validation_post. result = rules_post.
+    ENDCASE.
+  ENDMETHOD.
+  METHOD zcra_if_determination~has_rules.
+    result = xsdbool( lines( pick( rule_type ) ) > 0 ).
+  ENDMETHOD.
+  METHOD zcra_if_determination~get_rules.
+    result = pick( rule_type ).
+  ENDMETHOD.
+ENDCLASS.
 
-  method build.
-    mo_det = new zcra_cl_determination( ).
-    mo_det->register( iv_process = zcra_if_c_process=>anerkennung io_det = io_det ).
-    mo_engine = new zcra_cl_engine( io_determination = mo_det io_logger = mo_log ).
-  endmethod.
 
-  method runs_phases_in_order.
-    data(lo_det) = new lcl_det( ).
-    lo_det->set( iv_type = zcra_if_c_rule_type=>validation_pre
-                 it_rules = value #( ( new lcl_rule( iv_id = 'VP' iv_kind = 'V' ) ) ) ).
-    lo_det->set( iv_type = zcra_if_c_rule_type=>transformation
-                 it_rules = value #( ( new lcl_rule( iv_id = 'TR' iv_kind = 'T' ) ) ) ).
-    lo_det->set( iv_type = zcra_if_c_rule_type=>validation_post
-                 it_rules = value #( ( new lcl_rule( iv_id = 'VO' iv_kind = 'V' ) ) ) ).
-    build( lo_det ).
+CLASS ltc_engine IMPLEMENTATION.
 
-    mo_engine->run( iv_process = zcra_if_c_process=>anerkennung
-                    io_context = new zcra_cl_context( ) ).
+  METHOD setup.
+    log = NEW zcra_cl_log_memory( ).
+  ENDMETHOD.
 
-    data(lt) = mo_log->get_entries( ).
+  METHOD build.
+    det = NEW zcra_cl_determination( ).
+    det->register( process = zcra_if_c_process=>anerkennung determination = determination ).
+    engine = NEW zcra_cl_engine( determination = det logger = log ).
+  ENDMETHOD.
+
+  METHOD runs_phases_in_order.
+    DATA(det_stub) = NEW lcl_det( ).
+    det_stub->set( rule_type = zcra_if_c_rule_type=>validation_pre
+                   rules = VALUE #( ( NEW lcl_rule( id = 'VP' kind = 'V' ) ) ) ).
+    det_stub->set( rule_type = zcra_if_c_rule_type=>transformation
+                   rules = VALUE #( ( NEW lcl_rule( id = 'TR' kind = 'T' ) ) ) ).
+    det_stub->set( rule_type = zcra_if_c_rule_type=>validation_post
+                   rules = VALUE #( ( NEW lcl_rule( id = 'VO' kind = 'V' ) ) ) ).
+    build( det_stub ).
+
+    engine->run( process = zcra_if_c_process=>anerkennung
+                 context = NEW zcra_cl_context( ) ).
+
+    DATA(entries) = log->get_entries( ).
     " START, RULE(VP), SNAPSHOT(BEFORE), RULE(TR), SNAPSHOT(AFTER), RULE(VO), END
-    cl_abap_unit_assert=>assert_equals( act = lines( lt ) exp = 7 ).
-    cl_abap_unit_assert=>assert_equals( act = lt[ 1 ]-event exp = 'START' ).
-    cl_abap_unit_assert=>assert_equals( act = lt[ 2 ]-rule_id exp = 'VP' ).
-    cl_abap_unit_assert=>assert_equals( act = lt[ 3 ]-label exp = 'BEFORE' ).
-    cl_abap_unit_assert=>assert_equals( act = lt[ 4 ]-rule_id exp = 'TR' ).
-    cl_abap_unit_assert=>assert_equals( act = lt[ 5 ]-label exp = 'AFTER' ).
-    cl_abap_unit_assert=>assert_equals( act = lt[ 6 ]-rule_id exp = 'VO' ).
-    cl_abap_unit_assert=>assert_equals( act = lt[ 7 ]-event exp = 'END' ).
-  endmethod.
+    cl_abap_unit_assert=>assert_equals( act = lines( entries ) exp = 7 ).
+    cl_abap_unit_assert=>assert_equals( act = entries[ 1 ]-event exp = 'START' ).
+    cl_abap_unit_assert=>assert_equals( act = entries[ 2 ]-rule_id exp = 'VP' ).
+    cl_abap_unit_assert=>assert_equals( act = entries[ 3 ]-label exp = 'BEFORE' ).
+    cl_abap_unit_assert=>assert_equals( act = entries[ 4 ]-rule_id exp = 'TR' ).
+    cl_abap_unit_assert=>assert_equals( act = entries[ 5 ]-label exp = 'AFTER' ).
+    cl_abap_unit_assert=>assert_equals( act = entries[ 6 ]-rule_id exp = 'VO' ).
+    cl_abap_unit_assert=>assert_equals( act = entries[ 7 ]-event exp = 'END' ).
+  ENDMETHOD.
 
-  method skips_empty_transform.
-    data(lo_det) = new lcl_det( ).
-    lo_det->set( iv_type = zcra_if_c_rule_type=>validation_pre
-                 it_rules = value #( ( new lcl_rule( iv_id = 'VP' iv_kind = 'V' ) ) ) ).
-    build( lo_det ).
+  METHOD skips_empty_transform.
+    DATA(det_stub) = NEW lcl_det( ).
+    det_stub->set( rule_type = zcra_if_c_rule_type=>validation_pre
+                   rules = VALUE #( ( NEW lcl_rule( id = 'VP' kind = 'V' ) ) ) ).
+    build( det_stub ).
 
-    mo_engine->run( iv_process = zcra_if_c_process=>anerkennung
-                    io_context = new zcra_cl_context( ) ).
+    engine->run( process = zcra_if_c_process=>anerkennung
+                 context = NEW zcra_cl_context( ) ).
 
-    " No transform bucket => no BEFORE/AFTER snapshot events.
+    " Kein Transformations-Bucket => keine BEFORE/AFTER-Snapshot-Ereignisse.
     cl_abap_unit_assert=>assert_equals(
-      act = mo_log->count( zcra_cl_log_memory=>gc_event-snapshot ) exp = 0 ).
-  endmethod.
+      act = log->count( zcra_cl_log_memory=>gc_event-snapshot ) exp = 0 ).
+  ENDMETHOD.
 
-  method stop_short_circuits.
-    data(lo_det) = new lcl_det( ).
-    lo_det->set( iv_type = zcra_if_c_rule_type=>validation_pre
-                 it_rules = value #(
-                   ( new lcl_rule( iv_id = 'VP1' iv_kind = 'V' iv_stop = abap_true ) )
-                   ( new lcl_rule( iv_id = 'VP2' iv_kind = 'V' ) ) ) ).
-    lo_det->set( iv_type = zcra_if_c_rule_type=>transformation
-                 it_rules = value #( ( new lcl_rule( iv_id = 'TR' iv_kind = 'T' ) ) ) ).
-    lo_det->set( iv_type = zcra_if_c_rule_type=>validation_post
-                 it_rules = value #( ( new lcl_rule( iv_id = 'VO' iv_kind = 'V' ) ) ) ).
-    build( lo_det ).
+  METHOD stop_short_circuits.
+    DATA(det_stub) = NEW lcl_det( ).
+    det_stub->set( rule_type = zcra_if_c_rule_type=>validation_pre
+                   rules = VALUE #(
+                     ( NEW lcl_rule( id = 'VP1' kind = 'V' do_stop = abap_true ) )
+                     ( NEW lcl_rule( id = 'VP2' kind = 'V' ) ) ) ).
+    det_stub->set( rule_type = zcra_if_c_rule_type=>transformation
+                   rules = VALUE #( ( NEW lcl_rule( id = 'TR' kind = 'T' ) ) ) ).
+    det_stub->set( rule_type = zcra_if_c_rule_type=>validation_post
+                   rules = VALUE #( ( NEW lcl_rule( id = 'VO' kind = 'V' ) ) ) ).
+    build( det_stub ).
 
-    data(lo_result) = mo_engine->run( iv_process = zcra_if_c_process=>anerkennung
-                                      io_context = new zcra_cl_context( ) ).
+    DATA(result) = engine->run( process = zcra_if_c_process=>anerkennung
+                                context = NEW zcra_cl_context( ) ).
 
-    cl_abap_unit_assert=>assert_true( lo_result->is_stop_requested( ) ).
-    " Only VP1 ran (as applicable); VP2, TR, VO all skipped.
+    cl_abap_unit_assert=>assert_true( result->is_stop_requested( ) ).
+    " Nur VP1 lief (als anwendbar); VP2, TR, VO werden übersprungen.
     cl_abap_unit_assert=>assert_equals(
-      act = mo_log->count( zcra_cl_log_memory=>gc_event-rule ) exp = 1 ).
+      act = log->count( zcra_cl_log_memory=>gc_event-rule ) exp = 1 ).
     cl_abap_unit_assert=>assert_equals(
-      act = mo_log->count( zcra_cl_log_memory=>gc_event-snapshot ) exp = 0 ).
-  endmethod.
+      act = log->count( zcra_cl_log_memory=>gc_event-snapshot ) exp = 0 ).
+  ENDMETHOD.
 
-  method accumulates_messages.
-    data(lo_det) = new lcl_det( ).
-    lo_det->set( iv_type = zcra_if_c_rule_type=>validation_pre
-                 it_rules = value #(
-                   ( new lcl_rule( iv_id = 'VP1' iv_kind = 'V' iv_add_msg = abap_true ) )
-                   ( new lcl_rule( iv_id = 'VP2' iv_kind = 'V' iv_add_msg = abap_true ) ) ) ).
-    build( lo_det ).
+  METHOD accumulates_messages.
+    DATA(det_stub) = NEW lcl_det( ).
+    det_stub->set( rule_type = zcra_if_c_rule_type=>validation_pre
+                   rules = VALUE #(
+                     ( NEW lcl_rule( id = 'VP1' kind = 'V' emit_msg = abap_true ) )
+                     ( NEW lcl_rule( id = 'VP2' kind = 'V' emit_msg = abap_true ) ) ) ).
+    build( det_stub ).
 
-    data(lo_result) = mo_engine->run( iv_process = zcra_if_c_process=>anerkennung
-                                      io_context = new zcra_cl_context( ) ).
+    DATA(result) = engine->run( process = zcra_if_c_process=>anerkennung
+                                context = NEW zcra_cl_context( ) ).
 
-    cl_abap_unit_assert=>assert_equals( act = lines( lo_result->get_messages( ) ) exp = 2 ).
-  endmethod.
+    cl_abap_unit_assert=>assert_equals( act = lines( result->get_messages( ) ) exp = 2 ).
+  ENDMETHOD.
 
-  method inapplicable_skipped.
-    data(lo_det) = new lcl_det( ).
-    lo_det->set( iv_type = zcra_if_c_rule_type=>validation_pre
-                 it_rules = value #(
-                   ( new lcl_rule( iv_id = 'VP1' iv_kind = 'V'
-                                   iv_applicable = abap_false iv_add_msg = abap_true ) ) ) ).
-    build( lo_det ).
+  METHOD inapplicable_skipped.
+    DATA(det_stub) = NEW lcl_det( ).
+    det_stub->set( rule_type = zcra_if_c_rule_type=>validation_pre
+                   rules = VALUE #(
+                     ( NEW lcl_rule( id = 'VP1' kind = 'V'
+                                     applicable = abap_false emit_msg = abap_true ) ) ) ).
+    build( det_stub ).
 
-    data(lo_result) = mo_engine->run( iv_process = zcra_if_c_process=>anerkennung
-                                      io_context = new zcra_cl_context( ) ).
+    DATA(result) = engine->run( process = zcra_if_c_process=>anerkennung
+                                context = NEW zcra_cl_context( ) ).
 
-    " Rule not applicable => validate not called => no message, but it is logged.
-    cl_abap_unit_assert=>assert_initial( lo_result->get_messages( ) ).
-    data(lt) = mo_log->get_entries( ).
-    cl_abap_unit_assert=>assert_equals( act = lt[ 2 ]-applicable exp = abap_false ).
-  endmethod.
+    " Regel nicht anwendbar => validate nicht aufgerufen => keine Meldung, aber protokolliert.
+    cl_abap_unit_assert=>assert_initial( result->get_messages( ) ).
+    DATA(entries) = log->get_entries( ).
+    cl_abap_unit_assert=>assert_equals( act = entries[ 2 ]-applicable exp = abap_false ).
+  ENDMETHOD.
 
-  method kind_bucket_mismatch.
-    data(lo_det) = new lcl_det( ).
-    " A transformation-kind rule wrongly placed in the PRE (validation) bucket.
-    lo_det->set( iv_type = zcra_if_c_rule_type=>validation_pre
-                 it_rules = value #( ( new lcl_rule( iv_id = 'BAD' iv_kind = 'T' ) ) ) ).
-    build( lo_det ).
+  METHOD kind_bucket_mismatch.
+    DATA(det_stub) = NEW lcl_det( ).
+    " Eine Transformationsregel fälschlich im PRE-(Validierungs-)Bucket.
+    det_stub->set( rule_type = zcra_if_c_rule_type=>validation_pre
+                   rules = VALUE #( ( NEW lcl_rule( id = 'BAD' kind = 'T' ) ) ) ).
+    build( det_stub ).
 
-    try.
-        mo_engine->run( iv_process = zcra_if_c_process=>anerkennung
-                        io_context = new zcra_cl_context( ) ).
-        cl_abap_unit_assert=>fail( 'expected ZCRA_CX_RULE_KIND' ).
-      catch zcra_cx_rule_kind.
-        " expected
-    endtry.
-  endmethod.
+    TRY.
+        engine->run( process = zcra_if_c_process=>anerkennung
+                     context = NEW zcra_cl_context( ) ).
+        cl_abap_unit_assert=>fail( 'ZCRA_CX_RULE_KIND erwartet' ).
+      CATCH zcra_cx_rule_kind.
+        " erwartet
+    ENDTRY.
+  ENDMETHOD.
 
-endclass.
+ENDCLASS.

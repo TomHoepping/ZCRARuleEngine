@@ -1,45 +1,48 @@
-"! Example DETERMINATION (payload shell / template for developers).
-"! Maps the demo process to its ordered rule buckets and creates the rule
-"! instances via direct NEW (D-39, no dynamic CREATE OBJECT). Register it in the
-"! central ZCRA_CL_DETERMINATION under a process id, then run the engine.
-"!   PRE  : VAL_EXAMPLE  (flag not yet set -> info message)
-"!   TRN  : TRN_EXAMPLE  (sets the sample flag)
-"!   POST : VAL_EXAMPLE  (flag now set -> silent) — shows the before/after effect
-class zcra_cl_det_example definition
-  public
-  final
-  create public .
+"! Beispiel-DETERMINATION (Payload-Schablone für Entwickler).
+"! Ordnet dem Demo-Prozess seine geordneten Regel-Buckets zu und erzeugt die
+"! Regelinstanzen per direktem NEW (D-39, kein dynamisches CREATE OBJECT).
+"! In der zentralen ZCRA_CL_DETERMINATION unter einer Prozesskennung registrieren
+"! und anschließend die Engine ausführen.
+"!   PRE  : VAL_EXAMPLE  (Flag noch nicht gesetzt -> Info-Meldung)
+"!   TRN  : TRN_EXAMPLE  (setzt das Beispiel-Flag)
+"!   POST : VAL_EXAMPLE  (Flag jetzt gesetzt -> still) — zeigt den Vorher/Nachher-Effekt
+CLASS zcra_cl_det_example DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC.
 
-  public section.
-    interfaces zcra_if_determination .
-    methods constructor .
-  private section.
-    data mo_val type ref to zcra_if_rule .
-    data mo_trn type ref to zcra_if_rule .
-endclass.
+  PUBLIC SECTION.
+    INTERFACES zcra_if_determination.
+    METHODS constructor.
+  PRIVATE SECTION.
+    "! Zwischengespeicherte Validierungsregel-Instanz (zustandslos).
+    DATA validation_rule     TYPE REF TO zcra_if_rule.
+    "! Zwischengespeicherte Transformationsregel-Instanz (zustandslos).
+    DATA transformation_rule TYPE REF TO zcra_if_rule.
+ENDCLASS.
 
 
 
-class zcra_cl_det_example implementation.
+CLASS zcra_cl_det_example IMPLEMENTATION.
 
-  method constructor.
-    mo_val = new zcra_cl_val_example( ).
-    mo_trn = new zcra_cl_trn_example( ).
-  endmethod.
+  METHOD constructor.
+    me->validation_rule     = NEW zcra_cl_val_example( ).
+    me->transformation_rule = NEW zcra_cl_trn_example( ).
+  ENDMETHOD.
 
-  method zcra_if_determination~get_rules.
-    case iv_type.
-      when zcra_if_c_rule_type=>validation_pre.
-        rt_rules = value #( ( mo_val ) ).
-      when zcra_if_c_rule_type=>transformation.
-        rt_rules = value #( ( mo_trn ) ).
-      when zcra_if_c_rule_type=>validation_post.
-        rt_rules = value #( ( mo_val ) ).
-    endcase.
-  endmethod.
+  METHOD zcra_if_determination~get_rules.
+    CASE rule_type.
+      WHEN zcra_if_c_rule_type=>validation_pre.
+        result = VALUE #( ( me->validation_rule ) ).
+      WHEN zcra_if_c_rule_type=>transformation.
+        result = VALUE #( ( me->transformation_rule ) ).
+      WHEN zcra_if_c_rule_type=>validation_post.
+        result = VALUE #( ( me->validation_rule ) ).
+    ENDCASE.
+  ENDMETHOD.
 
-  method zcra_if_determination~has_rules.
-    rv_has = xsdbool( lines( zcra_if_determination~get_rules( iv_type ) ) > 0 ).
-  endmethod.
+  METHOD zcra_if_determination~has_rules.
+    result = xsdbool( lines( zcra_if_determination~get_rules( rule_type ) ) > 0 ).
+  ENDMETHOD.
 
-endclass.
+ENDCLASS.

@@ -1,95 +1,95 @@
-class ltc_determination definition final for testing
-  duration short
-  risk level harmless .
+CLASS ltc_determination DEFINITION FINAL FOR TESTING
+  DURATION SHORT
+  RISK LEVEL HARMLESS.
 
-  private section.
-    data mo_cut type ref to zcra_cl_determination.
-    methods setup.
-    methods unknown_process_empty  for testing.
-    methods registered_has_rules   for testing.
-    methods get_rules_ordered      for testing.
-endclass.
-
-
-class lcl_rule definition.
-  public section.
-    interfaces zcra_if_rule.
-    methods constructor
-      importing iv_id type zcra_d_rule_id.
-  private section.
-    data mv_id type zcra_d_rule_id.
-endclass.
-
-class lcl_rule implementation.
-  method constructor.
-    mv_id = iv_id.
-  endmethod.
-  method zcra_if_rule~get_meta.
-    rs_meta-rule_id = mv_id.
-  endmethod.
-  method zcra_if_rule~exec_condition.
-    rv_applicable = abap_true.
-  endmethod.
-  method zcra_if_rule~validate.
-  endmethod.
-  method zcra_if_rule~transform.
-  endmethod.
-endclass.
+  PRIVATE SECTION.
+    DATA cut TYPE REF TO zcra_cl_determination.
+    METHODS setup.
+    METHODS unknown_process_empty  FOR TESTING.
+    METHODS registered_has_rules   FOR TESTING.
+    METHODS get_rules_ordered      FOR TESTING.
+ENDCLASS.
 
 
-class lcl_det definition.
-  public section.
-    interfaces zcra_if_determination.
-endclass.
+CLASS lcl_rule DEFINITION.
+  PUBLIC SECTION.
+    INTERFACES zcra_if_rule.
+    METHODS constructor
+      IMPORTING id TYPE zcra_d_rule_id.
+  PRIVATE SECTION.
+    DATA id TYPE zcra_d_rule_id.
+ENDCLASS.
 
-class lcl_det implementation.
-  method zcra_if_determination~has_rules.
-    rv_has = xsdbool( iv_type = zcra_if_c_rule_type=>validation_pre ).
-  endmethod.
-  method zcra_if_determination~get_rules.
-    if iv_type = zcra_if_c_rule_type=>validation_pre.
-      append cast zcra_if_rule( new lcl_rule( 'R1' ) ) to rt_rules.
-      append cast zcra_if_rule( new lcl_rule( 'R2' ) ) to rt_rules.
-    endif.
-  endmethod.
-endclass.
+CLASS lcl_rule IMPLEMENTATION.
+  METHOD constructor.
+    me->id = id.
+  ENDMETHOD.
+  METHOD zcra_if_rule~get_meta.
+    result-rule_id = me->id.
+  ENDMETHOD.
+  METHOD zcra_if_rule~exec_condition.
+    result = abap_true.
+  ENDMETHOD.
+  METHOD zcra_if_rule~validate.
+  ENDMETHOD.
+  METHOD zcra_if_rule~transform.
+  ENDMETHOD.
+ENDCLASS.
 
 
-class ltc_determination implementation.
+CLASS lcl_det DEFINITION.
+  PUBLIC SECTION.
+    INTERFACES zcra_if_determination.
+ENDCLASS.
 
-  method setup.
-    mo_cut = new #( ).
-    mo_cut->register( iv_process = zcra_if_c_process=>anerkennung
-                      io_det     = new lcl_det( ) ).
-  endmethod.
+CLASS lcl_det IMPLEMENTATION.
+  METHOD zcra_if_determination~has_rules.
+    result = xsdbool( rule_type = zcra_if_c_rule_type=>validation_pre ).
+  ENDMETHOD.
+  METHOD zcra_if_determination~get_rules.
+    IF rule_type = zcra_if_c_rule_type=>validation_pre.
+      APPEND CAST zcra_if_rule( NEW lcl_rule( 'R1' ) ) TO result.
+      APPEND CAST zcra_if_rule( NEW lcl_rule( 'R2' ) ) TO result.
+    ENDIF.
+  ENDMETHOD.
+ENDCLASS.
 
-  method unknown_process_empty.
+
+CLASS ltc_determination IMPLEMENTATION.
+
+  METHOD setup.
+    cut = NEW #( ).
+    cut->register( process       = zcra_if_c_process=>anerkennung
+                   determination = NEW lcl_det( ) ).
+  ENDMETHOD.
+
+  METHOD unknown_process_empty.
     cl_abap_unit_assert=>assert_false(
-      mo_cut->has_rules( iv_process = zcra_if_c_process=>wegzug
-                         iv_type    = zcra_if_c_rule_type=>validation_pre ) ).
+      cut->has_rules( process   = zcra_if_c_process=>wegzug
+                      rule_type = zcra_if_c_rule_type=>validation_pre ) ).
     cl_abap_unit_assert=>assert_initial(
-      mo_cut->get_rules( iv_process = zcra_if_c_process=>wegzug
-                         iv_type    = zcra_if_c_rule_type=>validation_pre ) ).
-  endmethod.
+      cut->get_rules( process   = zcra_if_c_process=>wegzug
+                      rule_type = zcra_if_c_rule_type=>validation_pre ) ).
+  ENDMETHOD.
 
-  method registered_has_rules.
+  METHOD registered_has_rules.
     cl_abap_unit_assert=>assert_true(
-      mo_cut->has_rules( iv_process = zcra_if_c_process=>anerkennung
-                         iv_type    = zcra_if_c_rule_type=>validation_pre ) ).
+      cut->has_rules( process   = zcra_if_c_process=>anerkennung
+                      rule_type = zcra_if_c_rule_type=>validation_pre ) ).
     cl_abap_unit_assert=>assert_false(
-      mo_cut->has_rules( iv_process = zcra_if_c_process=>anerkennung
-                         iv_type    = zcra_if_c_rule_type=>transformation ) ).
-  endmethod.
+      cut->has_rules( process   = zcra_if_c_process=>anerkennung
+                      rule_type = zcra_if_c_rule_type=>transformation ) ).
+  ENDMETHOD.
 
-  method get_rules_ordered.
-    data(lt_rules) = mo_cut->get_rules( iv_process = zcra_if_c_process=>anerkennung
-                                        iv_type    = zcra_if_c_rule_type=>validation_pre ).
-    cl_abap_unit_assert=>assert_equals( act = lines( lt_rules ) exp = 2 ).
+  METHOD get_rules_ordered.
+    DATA(rules) = cut->get_rules( process   = zcra_if_c_process=>anerkennung
+                                  rule_type = zcra_if_c_rule_type=>validation_pre ).
+    cl_abap_unit_assert=>assert_equals( act = lines( rules ) exp = 2 ).
 
-    data(lo_first)  = lt_rules[ 1 ].
-    data(lo_second) = lt_rules[ 2 ].
-    cl_abap_unit_assert=>assert_equals( act = lo_first->get_meta( )-rule_id  exp = 'R1' ).
-    cl_abap_unit_assert=>assert_equals( act = lo_second->get_meta( )-rule_id exp = 'R2' ).
-  endmethod.
+    DATA(first)  = rules[ 1 ].
+    DATA(second) = rules[ 2 ].
+    cl_abap_unit_assert=>assert_equals( act = first->get_meta( )-rule_id  exp = 'R1' ).
+    cl_abap_unit_assert=>assert_equals( act = second->get_meta( )-rule_id exp = 'R2' ).
+  ENDMETHOD.
 
-endclass.
+ENDCLASS.

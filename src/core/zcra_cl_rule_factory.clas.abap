@@ -1,86 +1,85 @@
-class zcra_cl_rule_factory definition
-  public
-  create public .
+CLASS zcra_cl_rule_factory DEFINITION
+  PUBLIC
+  CREATE PUBLIC.
 
-  public section.
+  PUBLIC SECTION.
 
-    "! Whether an instance is cached under the name.
-    methods has
-      importing
-        !iv_name      type string
-      returning
-        value(rv_has) type abap_bool .
+    "! Gibt an, ob unter dem Namen eine Instanz zwischengespeichert ist.
+    METHODS has
+      IMPORTING
+        !name         TYPE string
+      RETURNING
+        VALUE(result) TYPE abap_bool.
 
-    "! Cached instance for the name (initial reference if none).
-    methods get
-      importing
-        !iv_name       type string
-      returning
-        value(ro_rule) type ref to zcra_if_rule .
+    "! Zwischengespeicherte Instanz zum Namen (initiale Referenz, wenn keine).
+    METHODS get
+      IMPORTING
+        !name         TYPE string
+      RETURNING
+        VALUE(result) TYPE REF TO zcra_if_rule.
 
-    "! Store an instance under the name (overwrites any existing).
-    methods put
-      importing
-        !iv_name type string
-        !io_rule type ref to zcra_if_rule .
+    "! Speichert eine Instanz unter dem Namen (überschreibt eine vorhandene).
+    METHODS put
+      IMPORTING
+        !name TYPE string
+        !rule TYPE REF TO zcra_if_rule.
 
-    "! Return the cached instance, or store and return the supplied one.
-    "! On a repeat call the cached instance is returned (cache hit) and the
-    "! supplied io_rule is ignored. Callers pass a directly NEW'd instance so
-    "! stateless rules are created once and reused.
-    methods get_or_put
-      importing
-        !iv_name       type string
-        !io_rule       type ref to zcra_if_rule
-      returning
-        value(ro_rule) type ref to zcra_if_rule .
+    "! Liefert die zwischengespeicherte Instanz, oder speichert die übergebene
+    "! und liefert sie. Bei einem Wiederholungsaufruf wird die gecachte Instanz
+    "! geliefert (Cache-Treffer) und die übergebene Regel ignoriert. Aufrufer
+    "! übergeben eine direkt per NEW erzeugte Instanz, sodass zustandslose Regeln
+    "! einmal erzeugt und wiederverwendet werden.
+    METHODS get_or_put
+      IMPORTING
+        !name         TYPE string
+        !rule         TYPE REF TO zcra_if_rule
+      RETURNING
+        VALUE(result) TYPE REF TO zcra_if_rule.
 
-  protected section.
-  private section.
+  PROTECTED SECTION.
+  PRIVATE SECTION.
 
-    types:
-      begin of ty_cache,
-        name type string,
-        rule type ref to zcra_if_rule,
-      end of ty_cache .
+    TYPES:
+      BEGIN OF ty_cache,
+        name TYPE string,
+        rule TYPE REF TO zcra_if_rule,
+      END OF ty_cache.
 
-    data mt_cache type hashed table of ty_cache with unique key name .
+    DATA cache TYPE HASHED TABLE OF ty_cache WITH UNIQUE KEY name.
 
-endclass.
+ENDCLASS.
 
 
 
-class zcra_cl_rule_factory implementation.
+CLASS zcra_cl_rule_factory IMPLEMENTATION.
 
-  method has.
-    rv_has = xsdbool( line_exists( mt_cache[ name = iv_name ] ) ).
-  endmethod.
+  METHOD has.
+    result = xsdbool( line_exists( cache[ name = name ] ) ).
+  ENDMETHOD.
 
-  method get.
-    read table mt_cache with key name = iv_name into data(ls_cache).
-    if sy-subrc = 0.
-      ro_rule = ls_cache-rule.
-    endif.
-  endmethod.
+  METHOD get.
+    result = VALUE #( cache[ name = name ]-rule OPTIONAL ).
+  ENDMETHOD.
 
-  method put.
-    data ls_cache type ty_cache.
-    ls_cache-name = iv_name.
-    ls_cache-rule = io_rule.
-    delete mt_cache where name = iv_name.
-    insert ls_cache into table mt_cache.
-  endmethod.
+  METHOD put.
+    DATA entry TYPE ty_cache.
+    entry-name = name.
+    entry-rule = rule.
+    DELETE cache WHERE name = entry-name.
+    INSERT entry INTO TABLE cache.
+  ENDMETHOD.
 
-  method get_or_put.
-    read table mt_cache with key name = iv_name into data(ls_cache).
-    if sy-subrc = 0.
-      ro_rule = ls_cache-rule.
-      return.
-    endif.
-    ls_cache-name = iv_name.
-    ls_cache-rule = io_rule.
-    insert ls_cache into table mt_cache.
-    ro_rule = io_rule.
-  endmethod.
+  METHOD get_or_put.
+    DATA(existing) = VALUE #( cache[ name = name ]-rule OPTIONAL ).
+    IF existing IS BOUND.
+      result = existing.
+      RETURN.
+    ENDIF.
+    DATA entry TYPE ty_cache.
+    entry-name = name.
+    entry-rule = rule.
+    INSERT entry INTO TABLE cache.
+    result = rule.
+  ENDMETHOD.
 
-endclass.
+ENDCLASS.

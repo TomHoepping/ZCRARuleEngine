@@ -12,55 +12,55 @@ ENDCLASS.
 CLASS ltc_context IMPLEMENTATION.
 
   METHOD old_new_accessors.
-    DATA ls_old TYPE zcra_s_graph.
-    DATA ls_new TYPE zcra_s_graph.
-    ls_old-shell_placeholder = 'O'.
-    ls_new-shell_placeholder = 'N'.
+    DATA old_graph TYPE zcra_s_graph.
+    DATA new_graph TYPE zcra_s_graph.
+    old_graph-shell_placeholder = 'O'.
+    new_graph-shell_placeholder = 'N'.
 
-    DATA(lo_ctx) = NEW zcra_cl_context( is_old = ls_old is_new = ls_new ).
+    DATA(context) = NEW zcra_cl_context( old_graph = old_graph new_graph = new_graph ).
 
     cl_abap_unit_assert=>assert_equals(
-      act = lo_ctx->zcra_if_context~get_old_graph( )-shell_placeholder
+      act = context->zcra_if_context~get_old_graph( )-shell_placeholder
       exp = 'O' ).
     cl_abap_unit_assert=>assert_equals(
-      act = lo_ctx->zcra_if_context~get_new_graph( )-shell_placeholder
+      act = context->zcra_if_context~get_new_graph( )-shell_placeholder
       exp = 'N' ).
   ENDMETHOD.
 
   METHOD mut_ref_is_new.
-    DATA ls_new TYPE zcra_s_graph.
-    ls_new-shell_placeholder = 'N'.
+    DATA new_graph TYPE zcra_s_graph.
+    new_graph-shell_placeholder = 'N'.
 
-    DATA(lo_ctx) = NEW zcra_cl_context( is_new = ls_new ).
-    DATA(lr_new) = lo_ctx->zcra_if_context_mut~get_new_graph_ref( ).
+    DATA(context) = NEW zcra_cl_context( new_graph = new_graph ).
+    DATA(new_ref) = context->zcra_if_context_mut~get_new_graph_ref( ).
 
-    " Mutating through the reference must change the context's new graph.
-    lr_new->shell_placeholder = 'X'.
+    " Änderung über die Referenz muss den neuen Graphen des Kontexts ändern.
+    new_ref->shell_placeholder = 'X'.
     cl_abap_unit_assert=>assert_equals(
-      act = lo_ctx->zcra_if_context~get_new_graph( )-shell_placeholder
+      act = context->zcra_if_context~get_new_graph( )-shell_placeholder
       exp = 'X' ).
   ENDMETHOD.
 
   METHOD snapshot_is_copy.
-    DATA ls_new TYPE zcra_s_graph.
-    ls_new-shell_placeholder = 'A'.
+    DATA new_graph TYPE zcra_s_graph.
+    new_graph-shell_placeholder = 'A'.
 
-    DATA(lo_ctx)  = NEW zcra_cl_context( is_new = ls_new ).
-    DATA(lo_copy) = lo_ctx->snapshot( ).
+    DATA(context) = NEW zcra_cl_context( new_graph = new_graph ).
+    DATA(copy)    = context->snapshot( ).
 
-    " Copy must hold the same values...
+    " Die Kopie muss dieselben Werte enthalten...
     cl_abap_unit_assert=>assert_equals(
-      act = lo_copy->zcra_if_context~get_new_graph( )-shell_placeholder
+      act = copy->zcra_if_context~get_new_graph( )-shell_placeholder
       exp = 'A' ).
 
-    " ...but be independent: mutating the original must not affect the copy.
-    DATA(lr_new) = lo_ctx->zcra_if_context_mut~get_new_graph_ref( ).
-    lr_new->shell_placeholder = 'B'.
+    " ...aber unabhängig sein: Änderung am Original darf die Kopie nicht beeinflussen.
+    DATA(new_ref) = context->zcra_if_context_mut~get_new_graph_ref( ).
+    new_ref->shell_placeholder = 'B'.
     cl_abap_unit_assert=>assert_equals(
-      act = lo_copy->zcra_if_context~get_new_graph( )-shell_placeholder
+      act = copy->zcra_if_context~get_new_graph( )-shell_placeholder
       exp = 'A' ).
     cl_abap_unit_assert=>assert_false(
-      xsdbool( lo_ctx = lo_copy ) ).
+      xsdbool( context = copy ) ).
   ENDMETHOD.
 
 ENDCLASS.

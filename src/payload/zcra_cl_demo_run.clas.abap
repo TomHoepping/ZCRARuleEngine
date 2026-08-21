@@ -1,78 +1,79 @@
-"! Runnable example / debug shell for the ZCRA Rule Engine.
-"! Run it in ADT: right-click -> Run As -> ABAP Application (Console) (F9).
-"! It wires the whole framework end-to-end and prints the result + engine trace,
-"! so developers can set a breakpoint anywhere and step through a real run:
-"!   determination registry -> in-memory logger -> context -> engine.run().
-"! Copy this into your own session/class to integrate the engine.
-class zcra_cl_demo_run definition
-  public
-  final
-  create public .
+"! Ausführbare Beispiel-/Debug-Schablone für die ZCRA Rule Engine.
+"! In ADT ausführen: Rechtsklick -> Run As -> ABAP Application (Console) (F9).
+"! Verdrahtet das gesamte Framework Ende-zu-Ende und gibt Ergebnis + Engine-Trace
+"! aus, sodass Entwickler an beliebiger Stelle einen Breakpoint setzen und einen
+"! echten Lauf durchsteppen können:
+"!   Determination-Registry -> In-Memory-Logger -> Kontext -> engine->run( ).
+"! Zum Integrieren der Engine diese Vorlage in die eigene Session/Klasse kopieren.
+CLASS zcra_cl_demo_run DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC.
 
-  public section.
-    interfaces if_oo_adt_classrun .
-  private section.
-    "! Demo process id (any value; the determination registry keys on it).
-    constants c_process type zcra_d_process_id value 'EXAMPLE'.
-endclass.
+  PUBLIC SECTION.
+    INTERFACES if_oo_adt_classrun.
+  PRIVATE SECTION.
+    "! Demo-Prozesskennung (beliebiger Wert; die Registry schlüsselt darauf).
+    CONSTANTS demo_process TYPE zcra_d_process_id VALUE 'EXAMPLE'.
+ENDCLASS.
 
 
 
-class zcra_cl_demo_run implementation.
+CLASS zcra_cl_demo_run IMPLEMENTATION.
 
-  method if_oo_adt_classrun~main.
+  METHOD if_oo_adt_classrun~main.
 
-    " 1) Central determination registry + the demo process determination.
-    data(lo_registry) = new zcra_cl_determination( ).
-    lo_registry->register( iv_process = c_process
-                           io_det     = new zcra_cl_det_example( ) ).
+    " 1) Zentrale Determination-Registry + die Demo-Prozess-Determination.
+    DATA(registry) = NEW zcra_cl_determination( ).
+    registry->register( process       = demo_process
+                        determination = NEW zcra_cl_det_example( ) ).
 
-    " 2) In-memory logger so we can print the engine trace afterwards.
-    "    Swap for new zcra_cl_log_bal( ) to write to SLG1 instead.
-    data(lo_logger) = new zcra_cl_log_memory( ).
+    " 2) In-Memory-Logger, um den Engine-Trace danach ausgeben zu können.
+    "    Für Ausgabe in SLG1 stattdessen NEW zcra_cl_log_bal( ) verwenden.
+    DATA(logger) = NEW zcra_cl_log_memory( ).
 
-    " 3) Context — empty graph; the sample flag starts unset.
-    data(lo_context) = new zcra_cl_context( ).
+    " 3) Kontext — leerer Graph; das Beispiel-Flag startet ungesetzt.
+    DATA(context) = NEW zcra_cl_context( ).
 
-    " 4) Engine (logger is optional; defaults to the no-op logger).
-    data(lo_engine) = new zcra_cl_engine( io_determination = lo_registry
-                                          io_logger        = lo_logger ).
+    " 4) Engine (Logger ist optional; Standard ist der No-op-Logger).
+    DATA(engine) = NEW zcra_cl_engine( determination = registry
+                                       logger        = logger ).
 
-    " 5) Run the pipeline: VALIDATION_PRE -> TRANSFORMATION -> VALIDATION_POST.
-    out->write( |=== ZCRA Rule Engine demo: process { c_process } ===| ).
-    data lo_result type ref to zcra_cl_result.
-    try.
-        lo_result = lo_engine->run( iv_process = c_process
-                                    io_context = lo_context ).
-      catch zcra_cx_rule_kind into data(lx_kind).
-        out->write( |ERROR - rule kind/bucket mismatch: { lx_kind->get_text( ) }| ).
-        return.
-    endtry.
+    " 5) Pipeline ausführen: VALIDATION_PRE -> TRANSFORMATION -> VALIDATION_POST.
+    out->write( |=== ZCRA Rule Engine Demo: Prozess { demo_process } ===| ).
+    DATA result TYPE REF TO zcra_cl_result.
+    TRY.
+        result = engine->run( process = demo_process
+                              context = context ).
+      CATCH zcra_cx_rule_kind INTO DATA(kind_error).
+        out->write( |FEHLER - KIND/Bucket-Konflikt: { kind_error->get_text( ) }| ).
+        RETURN.
+    ENDTRY.
 
-    " 6) Result messages.
-    out->write( |--- result messages ({ lines( lo_result->get_messages( ) ) }) ---| ).
-    loop at lo_result->get_messages( ) into data(ls_msg).
-      out->write( |{ ls_msg-type }  { ls_msg-id }/{ ls_msg-number }  { ls_msg-message_v1 }| ).
-    endloop.
-    out->write( |stop requested: { lo_result->is_stop_requested( ) }   has errors: { lo_result->has_errors( ) }| ).
+    " 6) Ergebnis-Meldungen.
+    out->write( |--- Ergebnis-Meldungen ({ lines( result->get_messages( ) ) }) ---| ).
+    LOOP AT result->get_messages( ) INTO DATA(message).
+      out->write( |{ message-type }  { message-id }/{ message-number }  { message-message_v1 }| ).
+    ENDLOOP.
+    out->write( |STOP angefordert: { result->is_stop_requested( ) }   Fehler: { result->has_errors( ) }| ).
 
-    " 7) Engine trace captured by the in-memory logger.
-    out->write( `--- engine trace ---` ).
-    loop at lo_logger->get_entries( ) into data(ls_e).
-      case ls_e-event.
-        when zcra_cl_log_memory=>gc_event-rule.
-          out->write( |RULE      { ls_e-rule_id } (kind { ls_e-kind }) applicable={ ls_e-applicable } msgs={ ls_e-msg_count }| ).
-        when zcra_cl_log_memory=>gc_event-snapshot.
-          out->write( |SNAPSHOT  { ls_e-label }| ).
-        when others.
-          out->write( |{ ls_e-event }| ).
-      endcase.
-    endloop.
+    " 7) Vom In-Memory-Logger erfasster Engine-Trace.
+    out->write( `--- Engine-Trace ---` ).
+    LOOP AT logger->get_entries( ) INTO DATA(entry).
+      CASE entry-event.
+        WHEN zcra_cl_log_memory=>gc_event-rule.
+          out->write( |RULE      { entry-rule_id } (KIND { entry-kind }) applicable={ entry-applicable } msgs={ entry-msg_count }| ).
+        WHEN zcra_cl_log_memory=>gc_event-snapshot.
+          out->write( |SNAPSHOT  { entry-label }| ).
+        WHEN OTHERS.
+          out->write( |{ entry-event }| ).
+      ENDCASE.
+    ENDLOOP.
 
-    " 8) Final context state — the transform flipped the sample flag.
-    out->write( `--- final context ---` ).
-    out->write( |sample flag = '{ lo_context->zcra_if_context~get_new_graph( )-shell_placeholder }'| ).
+    " 8) Endzustand des Kontexts — die Transformation hat das Beispiel-Flag gekippt.
+    out->write( `--- Endzustand Kontext ---` ).
+    out->write( |Beispiel-Flag = '{ context->zcra_if_context~get_new_graph( )-shell_placeholder }'| ).
 
-  endmethod.
+  ENDMETHOD.
 
-endclass.
+ENDCLASS.

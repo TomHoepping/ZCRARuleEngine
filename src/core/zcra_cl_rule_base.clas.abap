@@ -1,36 +1,36 @@
-class ZCRA_CL_RULE_BASE definition
-  public
-  abstract
-  create public .
+CLASS zcra_cl_rule_base DEFINITION
+  PUBLIC
+  ABSTRACT
+  CREATE PUBLIC.
 
-  public section.
-    interfaces zcra_if_rule .
-  protected section.
-  private section.
-endclass.
+  PUBLIC SECTION.
+    INTERFACES zcra_if_rule.
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
 
 
 
-class ZCRA_CL_RULE_BASE implementation.
+CLASS zcra_cl_rule_base IMPLEMENTATION.
 
-  method zcra_if_rule~get_meta.
-    " Base returns empty meta; concrete rules redefine.
-    return.
-  endmethod.
+  METHOD zcra_if_rule~get_meta.
+    " Basis liefert leere Metadaten; konkrete Regeln redefinieren dies.
+    RETURN.
+  ENDMETHOD.
 
-  method zcra_if_rule~exec_condition.
-    " Default: rule always applies.
-    rv_applicable = abap_true.
-  endmethod.
+  METHOD zcra_if_rule~exec_condition.
+    " Standard: Regel ist immer anwendbar.
+    result = abap_true.
+  ENDMETHOD.
 
-  method zcra_if_rule~validate.
-    " No-op default. Validation rules redefine.
-    return.
-  endmethod.
+  METHOD zcra_if_rule~validate.
+    " Standard: keine Aktion. Validierungsregeln redefinieren dies.
+    RETURN.
+  ENDMETHOD.
 
-  method zcra_if_rule~transform.
-    " No-op default. Transformation rules redefine.
-    return.
-  endmethod.
+  METHOD zcra_if_rule~transform.
+    " Standard: keine Aktion. Transformationsregeln redefinieren dies.
+    RETURN.
+  ENDMETHOD.
 
-endclass.
+ENDCLASS.

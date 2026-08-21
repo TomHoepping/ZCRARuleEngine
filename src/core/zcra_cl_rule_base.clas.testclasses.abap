@@ -1,5 +1,5 @@
-"! Throwaway concrete rule that redefines ONLY validate, proving the base
-"! supplies working defaults for get_meta / exec_condition / transform.
+"! Wegwerf-Regel, die NUR validate redefiniert und damit beweist, dass die Basis
+"! funktionierende Standardwerte für get_meta / exec_condition / transform liefert.
 CLASS ltc_rule DEFINITION FINAL FOR TESTING
   DURATION SHORT
   RISK LEVEL HARMLESS.
@@ -19,10 +19,10 @@ ENDCLASS.
 
 CLASS lcl_validation_rule IMPLEMENTATION.
   METHOD zcra_if_rule~validate.
-    io_result->add_message(
-      iv_type   = 'E'
-      iv_id     = 'ZCRA_ENGINE'
-      iv_number = '000' ).
+    result->add_message(
+      severity = 'E'
+      id       = 'ZCRA_ENGINE'
+      number   = '000' ).
   ENDMETHOD.
 ENDCLASS.
 
@@ -30,35 +30,35 @@ ENDCLASS.
 CLASS ltc_rule IMPLEMENTATION.
 
   METHOD default_condition_true.
-    DATA(lo_rule) = NEW lcl_validation_rule( ).
-    DATA(lo_ctx)  = NEW zcra_cl_context( ).
+    DATA(rule)    = NEW lcl_validation_rule( ).
+    DATA(context) = NEW zcra_cl_context( ).
     cl_abap_unit_assert=>assert_true(
-      lo_rule->zcra_if_rule~exec_condition( lo_ctx ) ).
+      rule->zcra_if_rule~exec_condition( context ) ).
   ENDMETHOD.
 
   METHOD validate_redefined.
-    DATA(lo_rule)   = NEW lcl_validation_rule( ).
-    DATA(lo_ctx)    = NEW zcra_cl_context( ).
-    DATA(lo_result) = NEW zcra_cl_result( ).
+    DATA(rule)    = NEW lcl_validation_rule( ).
+    DATA(context) = NEW zcra_cl_context( ).
+    DATA(result)  = NEW zcra_cl_result( ).
 
-    lo_rule->zcra_if_rule~validate( io_context = lo_ctx
-                                    io_result  = lo_result ).
+    rule->zcra_if_rule~validate( context = context
+                                 result  = result ).
 
     cl_abap_unit_assert=>assert_equals(
-      act = lines( lo_result->get_messages( ) )
+      act = lines( result->get_messages( ) )
       exp = 1 ).
-    cl_abap_unit_assert=>assert_true( lo_result->has_errors( ) ).
+    cl_abap_unit_assert=>assert_true( result->has_errors( ) ).
   ENDMETHOD.
 
   METHOD transform_is_noop.
-    DATA(lo_rule)   = NEW lcl_validation_rule( ).
-    DATA(lo_ctx)    = NEW zcra_cl_context( ).
-    DATA(lo_result) = NEW zcra_cl_result( ).
+    DATA(rule)    = NEW lcl_validation_rule( ).
+    DATA(context) = NEW zcra_cl_context( ).
+    DATA(result)  = NEW zcra_cl_result( ).
 
-    lo_rule->zcra_if_rule~transform( io_context = lo_ctx
-                                     io_result  = lo_result ).
+    rule->zcra_if_rule~transform( context = context
+                                  result  = result ).
 
-    cl_abap_unit_assert=>assert_initial( lo_result->get_messages( ) ).
+    cl_abap_unit_assert=>assert_initial( result->get_messages( ) ).
   ENDMETHOD.
 
 ENDCLASS.

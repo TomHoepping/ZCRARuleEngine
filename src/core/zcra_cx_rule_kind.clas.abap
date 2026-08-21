@@ -1,14 +1,14 @@
-class ZCRA_CX_RULE_KIND definition
-  public
-  inheriting from ZCRA_CX_ROOT
-  create public .
+CLASS zcra_cx_rule_kind DEFINITION
+  PUBLIC
+  INHERITING FROM zcra_cx_root
+  CREATE PUBLIC.
 
-  public section.
-  protected section.
-  private section.
-endclass.
+  PUBLIC SECTION.
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
 
 
 
-class ZCRA_CX_RULE_KIND implementation.
-endclass.
+CLASS zcra_cx_rule_kind IMPLEMENTATION.
+ENDCLASS.

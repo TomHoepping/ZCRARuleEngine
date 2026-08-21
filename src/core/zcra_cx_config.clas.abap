@@ -1,14 +1,14 @@
-class ZCRA_CX_CONFIG definition
-  public
-  inheriting from ZCRA_CX_ROOT
-  create public .
+CLASS zcra_cx_config DEFINITION
+  PUBLIC
+  INHERITING FROM zcra_cx_root
+  CREATE PUBLIC.
 
-  public section.
-  protected section.
-  private section.
-endclass.
+  PUBLIC SECTION.
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
 
 
 
-class ZCRA_CX_CONFIG implementation.
-endclass.
+CLASS zcra_cx_config IMPLEMENTATION.
+ENDCLASS.

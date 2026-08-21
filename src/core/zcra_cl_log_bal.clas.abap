@@ -1,212 +1,212 @@
-class zcra_cl_log_bal definition
-  public
-  final
-  create public .
+CLASS zcra_cl_log_bal DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC.
 
-  public section.
-    interfaces zcra_if_logger .
+  PUBLIC SECTION.
+    INTERFACES zcra_if_logger.
 
-    constants:
-      gc_object     type balobj_d   value 'ZCRA',
-      gc_subobj_run type balsubobj  value 'RUN',
-      gc_msgid      type arbgb      value 'ZCRA_ENGINE',
-      begin of gc_detlevel,
-        run      type ballevel value '1',
-        rule     type ballevel value '2',
-        snapshot type ballevel value '3',
-      end of gc_detlevel .
+    CONSTANTS:
+      gc_object     TYPE balobj_d   VALUE 'ZCRA',
+      gc_subobj_run TYPE balsubobj  VALUE 'RUN',
+      gc_msgid      TYPE arbgb      VALUE 'ZCRA_ENGINE',
+      BEGIN OF gc_detlevel,
+        run      TYPE ballevel VALUE '1',
+        rule     TYPE ballevel VALUE '2',
+        snapshot TYPE ballevel VALUE '3',
+      END OF gc_detlevel.
 
-    "! @parameter iv_persist | when true (default) end_run saves the BAL log to
-    "!   the database and commits. Pass abap_false in unit tests to keep the log
-    "!   in memory only (no COMMIT WORK).
-    methods constructor
-      importing
-        !iv_persist type abap_bool default abap_true .
-    "! The BAL log handle created by start_run (empty before). For verification.
-    methods get_handle
-      returning value(rv_handle) type balloghndl .
-    "! Number of messages added to the current log. For verification.
-    methods get_msg_count
-      returning value(rv_count) type i .
+    "! @parameter persist | wenn wahr (Standard), sichert end_run das BAL-Protokoll
+    "!   in der Datenbank und committet. In Unit-Tests abap_false übergeben, um das
+    "!   Protokoll nur im Speicher zu halten (kein COMMIT WORK).
+    METHODS constructor
+      IMPORTING
+        !persist TYPE abap_bool DEFAULT abap_true.
+    "! Das von start_run erzeugte BAL-Protokoll-Handle (vorher leer). Zur Prüfung.
+    METHODS get_handle
+      RETURNING VALUE(result) TYPE balloghndl.
+    "! Anzahl der zum aktuellen Protokoll hinzugefügten Meldungen. Zur Prüfung.
+    METHODS get_msg_count
+      RETURNING VALUE(result) TYPE i.
 
-  protected section.
-  private section.
-    data mv_persist   type abap_bool .
-    data mv_handle    type balloghndl .
-    data mv_msg_count type i .
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+    DATA persist   TYPE abap_bool.
+    DATA handle    TYPE balloghndl.
+    DATA msg_count TYPE i.
 
-    methods add_msg
-      importing
-        !iv_msgno    type msgnr
-        !iv_msgty    type symsgty
-        !iv_detlevel type ballevel
-        !iv_v1       type string optional .
-    methods add_bapiret
-      importing
-        !is_ret type bapiret2 .
-    methods add_free_text
-      importing
-        !iv_text     type string
-        !iv_detlevel type ballevel .
-endclass.
+    METHODS add_msg
+      IMPORTING
+        !msgno    TYPE msgnr
+        !msgty    TYPE symsgty
+        !detlevel TYPE ballevel
+        !v1       TYPE string OPTIONAL.
+    METHODS add_bapiret
+      IMPORTING
+        !ret TYPE bapiret2.
+    METHODS add_free_text
+      IMPORTING
+        !text     TYPE string
+        !detlevel TYPE ballevel.
+ENDCLASS.
 
 
 
-class zcra_cl_log_bal implementation.
+CLASS zcra_cl_log_bal IMPLEMENTATION.
 
-  method constructor.
-    mv_persist = iv_persist.
-  endmethod.
+  METHOD constructor.
+    me->persist = persist.
+  ENDMETHOD.
 
-  method get_handle.
-    rv_handle = mv_handle.
-  endmethod.
+  METHOD get_handle.
+    result = me->handle.
+  ENDMETHOD.
 
-  method get_msg_count.
-    rv_count = mv_msg_count.
-  endmethod.
+  METHOD get_msg_count.
+    result = me->msg_count.
+  ENDMETHOD.
 
-  method zcra_if_logger~start_run.
-    data ls_log type bal_s_log.
-    ls_log-object    = gc_object.
-    ls_log-subobject = gc_subobj_run.
-    ls_log-extnumber = iv_process.
-    ls_log-aluser    = sy-uname.
-    ls_log-alprog    = sy-repid.
-    call function 'BAL_LOG_CREATE'
-      exporting
-        i_s_log                 = ls_log
-      importing
-        e_log_handle            = mv_handle
-      exceptions
+  METHOD zcra_if_logger~start_run.
+    DATA log TYPE bal_s_log.
+    log-object    = gc_object.
+    log-subobject = gc_subobj_run.
+    log-extnumber = process.
+    log-aluser    = sy-uname.
+    log-alprog    = sy-repid.
+    CALL FUNCTION 'BAL_LOG_CREATE'
+      EXPORTING
+        i_s_log                 = log
+      IMPORTING
+        e_log_handle            = me->handle
+      EXCEPTIONS
         log_header_inconsistent = 1
-        others                  = 2.
-    if sy-subrc = 0.
-      add_msg( iv_msgno = '001' iv_msgty = 'I'
-               iv_detlevel = gc_detlevel-run iv_v1 = |{ iv_process }| ).
-    endif.
-  endmethod.
+        OTHERS                  = 2.
+    IF sy-subrc = 0.
+      add_msg( msgno = '001' msgty = 'I'
+               detlevel = gc_detlevel-run v1 = |{ process }| ).
+    ENDIF.
+  ENDMETHOD.
 
-  method zcra_if_logger~log_rule.
-    if mv_handle is initial.
-      return.
-    endif.
-    if iv_applicable = abap_false.
-      add_msg( iv_msgno = '003' iv_msgty = 'I'
-               iv_detlevel = gc_detlevel-rule iv_v1 = |{ is_meta-rule_id }| ).
-      return.
-    endif.
-    " Rule header for readability, then its accumulated messages.
+  METHOD zcra_if_logger~log_rule.
+    IF me->handle IS INITIAL.
+      RETURN.
+    ENDIF.
+    IF applicable = abap_false.
+      add_msg( msgno = '003' msgty = 'I'
+               detlevel = gc_detlevel-rule v1 = |{ meta-rule_id }| ).
+      RETURN.
+    ENDIF.
+    " Regelkopf zur besseren Lesbarkeit, danach die gesammelten Meldungen.
     add_free_text(
-      iv_text     = |Rule { is_meta-rule_id } ({ is_meta-kind }): { is_meta-purpose }|
-      iv_detlevel = gc_detlevel-rule ).
-    loop at io_result->get_messages( ) into data(ls_ret).
-      add_bapiret( ls_ret ).
-    endloop.
-    if io_result->is_stop_requested( ) = abap_true.
-      add_msg( iv_msgno = '004' iv_msgty = 'W'
-               iv_detlevel = gc_detlevel-rule iv_v1 = |{ is_meta-rule_id }| ).
-    endif.
-  endmethod.
+      text     = |Regel { meta-rule_id } ({ meta-kind }): { meta-purpose }|
+      detlevel = gc_detlevel-rule ).
+    LOOP AT result->get_messages( ) INTO DATA(ret).
+      add_bapiret( ret ).
+    ENDLOOP.
+    IF result->is_stop_requested( ) = abap_true.
+      add_msg( msgno = '004' msgty = 'W'
+               detlevel = gc_detlevel-rule v1 = |{ meta-rule_id }| ).
+    ENDIF.
+  ENDMETHOD.
 
-  method zcra_if_logger~snapshot.
-    if mv_handle is initial.
-      return.
-    endif.
-    data: begin of ls_snap,
-            old type zcra_s_graph,
-            new type zcra_s_graph,
-          end of ls_snap.
-    ls_snap-old = io_context->get_old_graph( ).
-    ls_snap-new = io_context->get_new_graph( ).
-    data(lv_json) = /ui2/cl_json=>serialize( data = ls_snap ).
+  METHOD zcra_if_logger~snapshot.
+    IF me->handle IS INITIAL.
+      RETURN.
+    ENDIF.
+    DATA: BEGIN OF snap,
+            old TYPE zcra_s_graph,
+            new TYPE zcra_s_graph,
+          END OF snap.
+    snap-old = context->get_old_graph( ).
+    snap-new = context->get_new_graph( ).
+    DATA(json) = /ui2/cl_json=>serialize( data = snap ).
     add_free_text(
-      iv_text     = |{ iv_label }: { lv_json }|
-      iv_detlevel = gc_detlevel-snapshot ).
-  endmethod.
+      text     = |{ label }: { json }|
+      detlevel = gc_detlevel-snapshot ).
+  ENDMETHOD.
 
-  method zcra_if_logger~end_run.
-    if mv_handle is initial.
-      return.
-    endif.
-    add_msg( iv_msgno = '002' iv_msgty = 'I'
-             iv_detlevel = gc_detlevel-run iv_v1 = |{ iv_process }| ).
-    if mv_persist = abap_true.
-      data lt_handle type bal_t_logh.
-      append mv_handle to lt_handle.
-      call function 'BAL_DB_SAVE'
-        exporting
-          i_t_log_handle = lt_handle
-        exceptions
-          others         = 0.
-      commit work.
-    endif.
-  endmethod.
+  METHOD zcra_if_logger~end_run.
+    IF me->handle IS INITIAL.
+      RETURN.
+    ENDIF.
+    add_msg( msgno = '002' msgty = 'I'
+             detlevel = gc_detlevel-run v1 = |{ process }| ).
+    IF me->persist = abap_true.
+      DATA handles TYPE bal_t_logh.
+      APPEND me->handle TO handles.
+      CALL FUNCTION 'BAL_DB_SAVE'
+        EXPORTING
+          i_t_log_handle = handles
+        EXCEPTIONS
+          OTHERS         = 0.
+      COMMIT WORK.
+    ENDIF.
+  ENDMETHOD.
 
-  method add_msg.
-    if mv_handle is initial.
-      return.
-    endif.
-    data ls_msg type bal_s_msg.
-    ls_msg-msgty     = iv_msgty.
-    ls_msg-msgid     = gc_msgid.
-    ls_msg-msgno     = iv_msgno.
-    ls_msg-msgv1     = iv_v1.
-    ls_msg-probclass = '3'.
-    ls_msg-detlevel  = iv_detlevel.
-    call function 'BAL_LOG_MSG_ADD'
-      exporting
-        i_log_handle = mv_handle
-        i_s_msg      = ls_msg
-      exceptions
-        others       = 0.
-    add 1 to mv_msg_count.
-  endmethod.
+  METHOD add_msg.
+    IF me->handle IS INITIAL.
+      RETURN.
+    ENDIF.
+    DATA msg TYPE bal_s_msg.
+    msg-msgty     = msgty.
+    msg-msgid     = gc_msgid.
+    msg-msgno     = msgno.
+    msg-msgv1     = v1.
+    msg-probclass = '3'.
+    msg-detlevel  = detlevel.
+    CALL FUNCTION 'BAL_LOG_MSG_ADD'
+      EXPORTING
+        i_log_handle = me->handle
+        i_s_msg      = msg
+      EXCEPTIONS
+        OTHERS       = 0.
+    me->msg_count += 1.
+  ENDMETHOD.
 
-  method add_bapiret.
-    if mv_handle is initial.
-      return.
-    endif.
-    data ls_msg type bal_s_msg.
-    ls_msg-msgty     = is_ret-type.
-    ls_msg-msgid     = is_ret-id.
-    ls_msg-msgno     = is_ret-number.
-    ls_msg-msgv1     = is_ret-message_v1.
-    ls_msg-msgv2     = is_ret-message_v2.
-    ls_msg-msgv3     = is_ret-message_v3.
-    ls_msg-msgv4     = is_ret-message_v4.
-    ls_msg-probclass = '2'.
-    ls_msg-detlevel  = gc_detlevel-rule.
-    call function 'BAL_LOG_MSG_ADD'
-      exporting
-        i_log_handle = mv_handle
-        i_s_msg      = ls_msg
-      exceptions
-        others       = 0.
-    add 1 to mv_msg_count.
-  endmethod.
+  METHOD add_bapiret.
+    IF me->handle IS INITIAL.
+      RETURN.
+    ENDIF.
+    DATA msg TYPE bal_s_msg.
+    msg-msgty     = ret-type.
+    msg-msgid     = ret-id.
+    msg-msgno     = ret-number.
+    msg-msgv1     = ret-message_v1.
+    msg-msgv2     = ret-message_v2.
+    msg-msgv3     = ret-message_v3.
+    msg-msgv4     = ret-message_v4.
+    msg-probclass = '2'.
+    msg-detlevel  = gc_detlevel-rule.
+    CALL FUNCTION 'BAL_LOG_MSG_ADD'
+      EXPORTING
+        i_log_handle = me->handle
+        i_s_msg      = msg
+      EXCEPTIONS
+        OTHERS       = 0.
+    me->msg_count += 1.
+  ENDMETHOD.
 
-  method add_free_text.
-    data lv_chunk type c length 200.
-    data(lv_rest) = iv_text.
-    while strlen( lv_rest ) > 0.
-      data(lv_len) = nmin( val1 = 200 val2 = strlen( lv_rest ) ).
-      lv_chunk = substring( val = lv_rest off = 0 len = lv_len ).
-      call function 'BAL_LOG_MSG_ADD_FREE_TEXT'
-        exporting
-          i_log_handle = mv_handle
+  METHOD add_free_text.
+    DATA chunk TYPE c LENGTH 200.
+    DATA(rest) = text.
+    WHILE strlen( rest ) > 0.
+      DATA(len) = nmin( val1 = 200 val2 = strlen( rest ) ).
+      chunk = substring( val = rest off = 0 len = len ).
+      CALL FUNCTION 'BAL_LOG_MSG_ADD_FREE_TEXT'
+        EXPORTING
+          i_log_handle = me->handle
           i_msgty      = 'I'
-          i_text       = lv_chunk
-          i_detlevel   = iv_detlevel
-        exceptions
-          others       = 0.
-      add 1 to mv_msg_count.
-      if strlen( lv_rest ) > 200.
-        lv_rest = substring( val = lv_rest off = 200 ).
-      else.
-        clear lv_rest.
-      endif.
-    endwhile.
-  endmethod.
+          i_text       = chunk
+          i_detlevel   = detlevel
+        EXCEPTIONS
+          OTHERS       = 0.
+      me->msg_count += 1.
+      IF strlen( rest ) > 200.
+        rest = substring( val = rest off = 200 ).
+      ELSE.
+        CLEAR rest.
+      ENDIF.
+    ENDWHILE.
+  ENDMETHOD.
 
-endclass.
+ENDCLASS.

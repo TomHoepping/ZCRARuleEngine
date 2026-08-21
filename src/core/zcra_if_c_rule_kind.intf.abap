@@ -1,9 +1,9 @@
-interface zcra_if_c_rule_kind
-  public .
+INTERFACE zcra_if_c_rule_kind
+  PUBLIC.
 
-  "! Rule kind: Validation
-  constants validation     type zcra_s_rule_meta-kind value 'V'.
-  "! Rule kind: Transformation
-  constants transformation type zcra_s_rule_meta-kind value 'T'.
+  "! Regelart: Validierung
+  CONSTANTS validation     TYPE zcra_s_rule_meta-kind VALUE 'V'.
+  "! Regelart: Transformation
+  CONSTANTS transformation TYPE zcra_s_rule_meta-kind VALUE 'T'.
 
-endinterface.
+ENDINTERFACE.

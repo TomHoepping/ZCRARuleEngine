@@ -1,32 +1,33 @@
-"! Consolidated CORE acceptance suite (Phase 3).
-"! Wires the real engine + determination registry + rule factory + memory
-"! logger + stub rules to prove the framework end-to-end: snapshot content
-"! capture, factory instance reuse across runs, STOP-in-transform short-circuit,
-"! the default no-op logger path and cross-phase message accumulation.
-"! Complements the per-object unit tests on ZCRA_CL_ENGINE / _DETERMINATION /
-"! _RULE_FACTORY. Refs: D-16, D-19, D-21, D-30, D-33, D-39, spec 6.8.
-class zcra_cl_core_tests definition
-  public
-  final
-  create public .
+"! Konsolidierte CORE-Akzeptanz-Suite (Phase 3).
+"! Verdrahtet die echte Engine + Determination-Registry + Regel-Factory +
+"! Memory-Logger + Stub-Regeln, um das Framework durchgängig zu beweisen:
+"! Snapshot-Inhaltserfassung, Factory-Instanzwiederverwendung über Läufe hinweg,
+"! STOP-in-Transformation-Kurzschluss, der Standard-No-op-Logger-Pfad und
+"! phasenübergreifende Meldungssammlung. Ergänzt die objektweisen Unit-Tests auf
+"! ZCRA_CL_ENGINE / _DETERMINATION / _RULE_FACTORY. Refs: D-16, D-19, D-21, D-30,
+"! D-33, D-39, Spezifikation 6.8.
+CLASS zcra_cl_core_tests DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC.
 
-  public section.
+  PUBLIC SECTION.
 
-    "! Marker method so the class carries production content and its unit-test
-    "! include is discovered by the ABAP Unit runner on this system.
-    class-methods suite_id
-      returning value(rv_id) type string.
+    "! Marker-Methode, damit die Klasse Produktivinhalt trägt und ihr Unit-Test-
+    "! Include vom ABAP-Unit-Runner auf diesem System gefunden wird.
+    CLASS-METHODS suite_id
+      RETURNING VALUE(result) TYPE string.
 
-  protected section.
-  private section.
-endclass.
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
 
 
 
-class zcra_cl_core_tests implementation.
+CLASS zcra_cl_core_tests IMPLEMENTATION.
 
-  method suite_id.
-    rv_id = 'ZCRA_CORE_ACCEPTANCE'.
-  endmethod.
+  METHOD suite_id.
+    result = 'ZCRA_CORE_ACCEPTANCE'.
+  ENDMETHOD.
 
-endclass.
+ENDCLASS.

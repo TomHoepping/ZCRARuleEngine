@@ -1,26 +1,26 @@
-interface zcra_if_rule
-  public .
+INTERFACE zcra_if_rule
+  PUBLIC.
 
-  "! Rule metadata (id, purpose, kind).
-  methods get_meta
-    returning value(rs_meta) type zcra_s_rule_meta .
+  "! Regel-Metadaten (Id, Zweck, Art).
+  METHODS get_meta
+    RETURNING VALUE(result) TYPE zcra_s_rule_meta.
 
-  "! Whether this rule applies to the given context. Default true.
-  methods exec_condition
-    importing
-      !io_context          type ref to zcra_if_context
-    returning value(rv_applicable) type abap_bool .
+  "! Gibt an, ob diese Regel auf den gegebenen Kontext anwendbar ist. Standard: true.
+  METHODS exec_condition
+    IMPORTING
+      !context      TYPE REF TO zcra_if_context
+    RETURNING VALUE(result) TYPE abap_bool.
 
-  "! Validation logic (read-only context). Appends messages to the result.
-  methods validate
-    importing
-      !io_context type ref to zcra_if_context
-      !io_result  type ref to zcra_cl_result .
+  "! Validierungslogik (schreibgeschützter Kontext). Hängt Meldungen an das Ergebnis an.
+  METHODS validate
+    IMPORTING
+      !context TYPE REF TO zcra_if_context
+      !result  TYPE REF TO zcra_cl_result.
 
-  "! Transformation logic (mutable context). Appends messages to the result.
-  methods transform
-    importing
-      !io_context type ref to zcra_if_context_mut
-      !io_result  type ref to zcra_cl_result .
+  "! Transformationslogik (veränderbarer Kontext). Hängt Meldungen an das Ergebnis an.
+  METHODS transform
+    IMPORTING
+      !context TYPE REF TO zcra_if_context_mut
+      !result  TYPE REF TO zcra_cl_result.
 
-endinterface.
+ENDINTERFACE.

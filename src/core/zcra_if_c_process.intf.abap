@@ -1,9 +1,9 @@
-interface ZCRA_IF_C_PROCESS
-  public .
+INTERFACE zcra_if_c_process
+  PUBLIC.
 
-  "! Process: Move-out (Wegzug)
-  constants wegzug type zcra_d_process_id value 'WEGZUG'.
-  "! Process: Recognition (Anerkennung)
-  constants anerkennung type zcra_d_process_id value 'ANERKENNUNG'.
+  "! Prozess: Wegzug
+  CONSTANTS wegzug TYPE zcra_d_process_id VALUE 'WEGZUG'.
+  "! Prozess: Anerkennung
+  CONSTANTS anerkennung TYPE zcra_d_process_id VALUE 'ANERKENNUNG'.
 
-endinterface.
+ENDINTERFACE.

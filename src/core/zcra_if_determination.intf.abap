@@ -1,22 +1,22 @@
-interface zcra_if_determination
-  public .
+INTERFACE zcra_if_determination
+  PUBLIC.
 
-  "! Ordered list of rule instances.
-  types tt_rules type standard table of ref to zcra_if_rule with empty key .
+  "! Geordnete Liste von Regelinstanzen.
+  TYPES tt_rules TYPE STANDARD TABLE OF REF TO zcra_if_rule WITH EMPTY KEY.
 
-  "! Whether this process provides rules for the given TYPE bucket
+  "! Gibt an, ob dieser Prozess Regeln für den angegebenen TYPE-Bucket liefert
   "! (VALIDATION_PRE / TRANSFORMATION / VALIDATION_POST).
-  methods has_rules
-    importing
-      !iv_type      type zcra_if_c_rule_type=>ty_type
-    returning
-      value(rv_has) type abap_bool .
+  METHODS has_rules
+    IMPORTING
+      !rule_type    TYPE zcra_if_c_rule_type=>ty_type
+    RETURNING
+      VALUE(result) TYPE abap_bool.
 
-  "! Ordered rule instances for the given TYPE bucket (in SEQNO order).
-  methods get_rules
-    importing
-      !iv_type        type zcra_if_c_rule_type=>ty_type
-    returning
-      value(rt_rules) type tt_rules .
+  "! Geordnete Regelinstanzen für den angegebenen TYPE-Bucket (in SEQNO-Reihenfolge).
+  METHODS get_rules
+    IMPORTING
+      !rule_type    TYPE zcra_if_c_rule_type=>ty_type
+    RETURNING
+      VALUE(result) TYPE tt_rules.
 
-endinterface.
+ENDINTERFACE.

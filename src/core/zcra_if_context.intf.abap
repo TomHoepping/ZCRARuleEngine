@@ -1,11 +1,11 @@
-interface zcra_if_context
-  public .
+INTERFACE zcra_if_context
+  PUBLIC.
 
-  "! The graph as it was BEFORE the engine run (read-only baseline).
-  methods get_old_graph
-    returning value(rs_graph) type zcra_s_graph .
-  "! The current NEW graph (read-only view).
-  methods get_new_graph
-    returning value(rs_graph) type zcra_s_graph .
+  "! Liefert den Graphen im Zustand VOR dem Engine-Lauf (schreibgeschützte Basis).
+  METHODS get_old_graph
+    RETURNING VALUE(result) TYPE zcra_s_graph.
+  "! Liefert den aktuellen NEUEN Graphen (schreibgeschützte Sicht).
+  METHODS get_new_graph
+    RETURNING VALUE(result) TYPE zcra_s_graph.
 
-endinterface.
+ENDINTERFACE.

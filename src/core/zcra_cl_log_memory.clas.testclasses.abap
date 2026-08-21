@@ -1,91 +1,91 @@
-"! Unit tests for ZCRA_CL_LOG_MEMORY and ZCRA_CL_LOG_NULL.
-class ltc_memory definition final
-  for testing duration short risk level harmless.
+"! Unit-Tests für ZCRA_CL_LOG_MEMORY und ZCRA_CL_LOG_NULL.
+CLASS ltc_memory DEFINITION FINAL
+  FOR TESTING DURATION SHORT RISK LEVEL HARMLESS.
 
-  private section.
-    data mo_cut type ref to zcra_cl_log_memory.
-    data mo_log type ref to zcra_if_logger.
+  PRIVATE SECTION.
+    DATA cut TYPE REF TO zcra_cl_log_memory.
+    DATA log TYPE REF TO zcra_if_logger.
 
-    methods setup.
-    methods records_run_lifecycle for testing.
-    methods records_rule_outcome  for testing.
-    methods records_snapshot_json for testing.
-    methods null_logger_is_inert  for testing.
-endclass.
+    METHODS setup.
+    METHODS records_run_lifecycle FOR TESTING.
+    METHODS records_rule_outcome  FOR TESTING.
+    METHODS records_snapshot_json FOR TESTING.
+    METHODS null_logger_is_inert  FOR TESTING.
+ENDCLASS.
 
-"! Minimal read-only context stub for snapshot tests.
-class lcl_ctx_stub definition final.
-  public section.
-    interfaces zcra_if_context.
-endclass.
+"! Minimaler schreibgeschützter Kontext-Stub für Snapshot-Tests.
+CLASS lcl_ctx_stub DEFINITION FINAL.
+  PUBLIC SECTION.
+    INTERFACES zcra_if_context.
+ENDCLASS.
 
-class lcl_ctx_stub implementation.
-  method zcra_if_context~get_old_graph.
-  endmethod.
-  method zcra_if_context~get_new_graph.
-  endmethod.
-endclass.
+CLASS lcl_ctx_stub IMPLEMENTATION.
+  METHOD zcra_if_context~get_old_graph.
+  ENDMETHOD.
+  METHOD zcra_if_context~get_new_graph.
+  ENDMETHOD.
+ENDCLASS.
 
-class ltc_memory implementation.
+CLASS ltc_memory IMPLEMENTATION.
 
-  method setup.
-    mo_cut = new zcra_cl_log_memory( ).
-    mo_log = mo_cut.
-  endmethod.
+  METHOD setup.
+    cut = NEW zcra_cl_log_memory( ).
+    log = cut.
+  ENDMETHOD.
 
-  method records_run_lifecycle.
-    mo_log->start_run( iv_process = 'PROC01' ).
-    mo_log->end_run( iv_process = 'PROC01' ).
+  METHOD records_run_lifecycle.
+    log->start_run( 'PROC01' ).
+    log->end_run( 'PROC01' ).
 
     cl_abap_unit_assert=>assert_equals(
-      act = mo_cut->count( ) exp = 2 msg = 'expected two lifecycle entries' ).
+      act = cut->count( ) exp = 2 msg = 'zwei Lebenszyklus-Einträge erwartet' ).
     cl_abap_unit_assert=>assert_equals(
-      act = mo_cut->count( zcra_cl_log_memory=>gc_event-start ) exp = 1 ).
+      act = cut->count( zcra_cl_log_memory=>gc_event-start ) exp = 1 ).
     cl_abap_unit_assert=>assert_equals(
-      act = mo_cut->count( zcra_cl_log_memory=>gc_event-end ) exp = 1 ).
-  endmethod.
+      act = cut->count( zcra_cl_log_memory=>gc_event-end ) exp = 1 ).
+  ENDMETHOD.
 
-  method records_rule_outcome.
-    data(lo_result) = new zcra_cl_result( ).
-    lo_result->add_message(
-      iv_type = 'E' iv_id = 'ZCRA_ENGINE' iv_number = '003' ).
-    lo_result->request_stop( ).
+  METHOD records_rule_outcome.
+    DATA(result) = NEW zcra_cl_result( ).
+    result->add_message(
+      severity = 'E' id = 'ZCRA_ENGINE' number = '003' ).
+    result->request_stop( ).
 
-    mo_log->log_rule(
-      is_meta       = value #( rule_id = 'R001' kind = 'T' )
-      iv_applicable = abap_true
-      io_result     = lo_result ).
+    log->log_rule(
+      meta       = VALUE #( rule_id = 'R001' kind = 'T' )
+      applicable = abap_true
+      result     = result ).
 
-    data(lt) = mo_cut->get_entries( ).
-    cl_abap_unit_assert=>assert_equals( act = lines( lt ) exp = 1 ).
-    data(ls) = lt[ 1 ].
-    cl_abap_unit_assert=>assert_equals( act = ls-event exp = 'RULE' ).
-    cl_abap_unit_assert=>assert_equals( act = ls-rule_id exp = 'R001' ).
-    cl_abap_unit_assert=>assert_equals( act = ls-applicable exp = abap_true ).
-    cl_abap_unit_assert=>assert_equals( act = ls-stop exp = abap_true ).
-    cl_abap_unit_assert=>assert_equals( act = ls-has_errors exp = abap_true ).
-    cl_abap_unit_assert=>assert_equals( act = ls-msg_count exp = 1 ).
-  endmethod.
+    DATA(entries) = cut->get_entries( ).
+    cl_abap_unit_assert=>assert_equals( act = lines( entries ) exp = 1 ).
+    DATA(entry) = entries[ 1 ].
+    cl_abap_unit_assert=>assert_equals( act = entry-event exp = 'RULE' ).
+    cl_abap_unit_assert=>assert_equals( act = entry-rule_id exp = 'R001' ).
+    cl_abap_unit_assert=>assert_equals( act = entry-applicable exp = abap_true ).
+    cl_abap_unit_assert=>assert_equals( act = entry-stop exp = abap_true ).
+    cl_abap_unit_assert=>assert_equals( act = entry-has_errors exp = abap_true ).
+    cl_abap_unit_assert=>assert_equals( act = entry-msg_count exp = 1 ).
+  ENDMETHOD.
 
-  method records_snapshot_json.
-    data(lo_ctx) = new lcl_ctx_stub( ).
-    mo_log->snapshot( iv_label = 'BEFORE' io_context = lo_ctx ).
+  METHOD records_snapshot_json.
+    DATA(context) = NEW lcl_ctx_stub( ).
+    log->snapshot( label = 'BEFORE' context = context ).
 
-    data(lt) = mo_cut->get_entries( ).
-    cl_abap_unit_assert=>assert_equals( act = lines( lt ) exp = 1 ).
-    cl_abap_unit_assert=>assert_equals( act = lt[ 1 ]-label exp = 'BEFORE' ).
+    DATA(entries) = cut->get_entries( ).
+    cl_abap_unit_assert=>assert_equals( act = lines( entries ) exp = 1 ).
+    cl_abap_unit_assert=>assert_equals( act = entries[ 1 ]-label exp = 'BEFORE' ).
     cl_abap_unit_assert=>assert_not_initial(
-      act = lt[ 1 ]-json msg = 'snapshot JSON must be populated' ).
-  endmethod.
+      act = entries[ 1 ]-json msg = 'Snapshot-JSON muss befüllt sein' ).
+  ENDMETHOD.
 
-  method null_logger_is_inert.
-    data(lo_null) = zcra_cl_log_null=>get_instance( ).
-    lo_null->start_run( iv_process = 'PROC01' ).
-    lo_null->snapshot( iv_label = 'X' io_context = new lcl_ctx_stub( ) ).
-    lo_null->end_run( iv_process = 'PROC01' ).
-    " Singleton returns the same instance and never dumps.
+  METHOD null_logger_is_inert.
+    DATA(null_logger) = zcra_cl_log_null=>get_instance( ).
+    null_logger->start_run( 'PROC01' ).
+    null_logger->snapshot( label = 'X' context = NEW lcl_ctx_stub( ) ).
+    null_logger->end_run( 'PROC01' ).
+    " Singleton liefert dieselbe Instanz und dumpt niemals.
     cl_abap_unit_assert=>assert_equals(
-      act = lo_null exp = zcra_cl_log_null=>get_instance( ) ).
-  endmethod.
+      act = null_logger exp = zcra_cl_log_null=>get_instance( ) ).
+  ENDMETHOD.
 
-endclass.
+ENDCLASS.

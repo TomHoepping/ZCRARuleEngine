@@ -1,40 +1,43 @@
-class ZCRA_CX_ROOT definition
-  public
-  inheriting from CX_STATIC_CHECK
-  create public .
+CLASS zcra_cx_root DEFINITION
+  PUBLIC
+  INHERITING FROM cx_static_check
+  CREATE PUBLIC.
 
-  public section.
+  PUBLIC SECTION.
 
-    "! Optional free-text technical error message.
-    data mv_text type string read-only .
+    "! Optionaler technischer Freitext zur Fehlermeldung.
+    DATA text TYPE string READ-ONLY.
 
-    methods constructor
-      importing
-        !textid   like textid optional
-        !previous like previous optional
-        !iv_text  type string optional .
+    "! @parameter textid   | Nachrichtentextkennung der Ausnahme.
+    "! @parameter previous | Vorausgehende (verkettete) Ausnahme.
+    "! @parameter text     | Optionaler technischer Freitext.
+    METHODS constructor
+      IMPORTING
+        !textid   LIKE textid OPTIONAL
+        !previous LIKE previous OPTIONAL
+        !text     TYPE string OPTIONAL.
 
-    methods get_text redefinition .
+    METHODS get_text REDEFINITION.
 
-  protected section.
-  private section.
-endclass.
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
 
 
 
-class ZCRA_CX_ROOT implementation.
+CLASS zcra_cx_root IMPLEMENTATION.
 
-  method constructor.
+  METHOD constructor.
     super->constructor( textid = textid previous = previous ).
-    mv_text = iv_text.
-  endmethod.
+    me->text = text.
+  ENDMETHOD.
 
-  method get_text.
-    if mv_text is not initial.
-      result = mv_text.
-    else.
+  METHOD get_text.
+    IF me->text IS NOT INITIAL.
+      result = me->text.
+    ELSE.
       result = super->get_text( ).
-    endif.
-  endmethod.
+    ENDIF.
+  ENDMETHOD.
 
-endclass.
+ENDCLASS.

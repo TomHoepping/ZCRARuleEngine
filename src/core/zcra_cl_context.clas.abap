@@ -1,52 +1,54 @@
-class ZCRA_CL_CONTEXT definition
-  public
-  create public .
+CLASS zcra_cl_context DEFINITION
+  PUBLIC
+  CREATE PUBLIC.
 
-  public section.
+  PUBLIC SECTION.
 
-    interfaces zcra_if_context_mut .
+    INTERFACES zcra_if_context_mut.
 
-    methods constructor
-      importing
-        !is_old type zcra_s_graph optional
-        !is_new type zcra_s_graph optional .
+    "! @parameter old_graph | Graph im Zustand VOR dem Lauf (optional).
+    "! @parameter new_graph | Graph im Zustand NACH dem Lauf (optional).
+    METHODS constructor
+      IMPORTING
+        !old_graph TYPE zcra_s_graph OPTIONAL
+        !new_graph TYPE zcra_s_graph OPTIONAL.
 
-    "! Return an independent deep copy of this context.
-    methods snapshot
-      returning value(ro_copy) type ref to zcra_cl_context .
+    "! Liefert eine unabhängige tiefe Kopie dieses Kontexts.
+    METHODS snapshot
+      RETURNING VALUE(result) TYPE REF TO zcra_cl_context.
 
-  protected section.
-  private section.
+  PROTECTED SECTION.
+  PRIVATE SECTION.
 
-    data ms_old type zcra_s_graph .
-    data ms_new type zcra_s_graph .
+    DATA old_graph TYPE zcra_s_graph.
+    DATA new_graph TYPE zcra_s_graph.
 
-endclass.
+ENDCLASS.
 
 
 
-class ZCRA_CL_CONTEXT implementation.
+CLASS zcra_cl_context IMPLEMENTATION.
 
-  method constructor.
-    ms_old = is_old.
-    ms_new = is_new.
-  endmethod.
+  METHOD constructor.
+    me->old_graph = old_graph.
+    me->new_graph = new_graph.
+  ENDMETHOD.
 
-  method zcra_if_context~get_old_graph.
-    rs_graph = ms_old.
-  endmethod.
+  METHOD zcra_if_context~get_old_graph.
+    result = me->old_graph.
+  ENDMETHOD.
 
-  method zcra_if_context~get_new_graph.
-    rs_graph = ms_new.
-  endmethod.
+  METHOD zcra_if_context~get_new_graph.
+    result = me->new_graph.
+  ENDMETHOD.
 
-  method zcra_if_context_mut~get_new_graph_ref.
-    rr_graph = ref #( ms_new ).
-  endmethod.
+  METHOD zcra_if_context_mut~get_new_graph_ref.
+    result = REF #( me->new_graph ).
+  ENDMETHOD.
 
-  method snapshot.
-    ro_copy = new zcra_cl_context( is_old = ms_old
-                                   is_new = ms_new ).
-  endmethod.
+  METHOD snapshot.
+    result = NEW zcra_cl_context( old_graph = me->old_graph
+                                  new_graph = me->new_graph ).
+  ENDMETHOD.
 
-endclass.
+ENDCLASS.

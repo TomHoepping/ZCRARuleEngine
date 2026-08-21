@@ -1,13 +1,13 @@
-class ZCRA_CL_CONSTANTS_TEST definition
-  public
-  create private .
+CLASS zcra_cl_constants_test DEFINITION
+  PUBLIC
+  CREATE PRIVATE.
 
-public section.
-protected section.
-private section.
+  PUBLIC SECTION.
+  PROTECTED SECTION.
+  PRIVATE SECTION.
 ENDCLASS.
 
 
 
-CLASS ZCRA_CL_CONSTANTS_TEST IMPLEMENTATION.
+CLASS zcra_cl_constants_test IMPLEMENTATION.
 ENDCLASS.

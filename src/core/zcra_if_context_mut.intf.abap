@@ -1,10 +1,10 @@
-interface zcra_if_context_mut
-  public .
+INTERFACE zcra_if_context_mut
+  PUBLIC.
 
-  interfaces zcra_if_context .
+  INTERFACES zcra_if_context.
 
-  "! Reference to the NEW graph so a transformation can mutate it in place.
-  methods get_new_graph_ref
-    returning value(rr_graph) type ref to zcra_s_graph .
+  "! Referenz auf den NEUEN Graphen, damit eine Transformation ihn direkt ändern kann.
+  METHODS get_new_graph_ref
+    RETURNING VALUE(result) TYPE REF TO zcra_s_graph.
 
-endinterface.
+ENDINTERFACE.

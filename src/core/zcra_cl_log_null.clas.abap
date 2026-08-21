@@ -1,39 +1,39 @@
-class zcra_cl_log_null definition
-  public
-  final
-  create public .
+CLASS zcra_cl_log_null DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC.
 
-  public section.
-    interfaces zcra_if_logger .
-    "! Convenience singleton (the logger is stateless).
-    class-methods get_instance
-      returning value(ro_logger) type ref to zcra_if_logger .
-  protected section.
-  private section.
-    class-data go_instance type ref to zcra_if_logger .
-endclass.
+  PUBLIC SECTION.
+    INTERFACES zcra_if_logger.
+    "! Komfort-Singleton (der Logger ist zustandslos).
+    CLASS-METHODS get_instance
+      RETURNING VALUE(result) TYPE REF TO zcra_if_logger.
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+    CLASS-DATA instance TYPE REF TO zcra_if_logger.
+ENDCLASS.
 
 
 
-class zcra_cl_log_null implementation.
+CLASS zcra_cl_log_null IMPLEMENTATION.
 
-  method get_instance.
-    if go_instance is initial.
-      go_instance = new zcra_cl_log_null( ).
-    endif.
-    ro_logger = go_instance.
-  endmethod.
+  METHOD get_instance.
+    IF instance IS INITIAL.
+      instance = NEW zcra_cl_log_null( ).
+    ENDIF.
+    result = instance.
+  ENDMETHOD.
 
-  method zcra_if_logger~start_run.
-  endmethod.
+  METHOD zcra_if_logger~start_run.
+  ENDMETHOD.
 
-  method zcra_if_logger~log_rule.
-  endmethod.
+  METHOD zcra_if_logger~log_rule.
+  ENDMETHOD.
 
-  method zcra_if_logger~snapshot.
-  endmethod.
+  METHOD zcra_if_logger~snapshot.
+  ENDMETHOD.
 
-  method zcra_if_logger~end_run.
-  endmethod.
+  METHOD zcra_if_logger~end_run.
+  ENDMETHOD.
 
-endclass.
+ENDCLASS.

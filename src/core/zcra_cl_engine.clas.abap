@@ -1,131 +1,137 @@
-class zcra_cl_engine definition
-  public
-  create public .
+CLASS zcra_cl_engine DEFINITION
+  PUBLIC
+  CREATE PUBLIC.
 
-  public section.
+  PUBLIC SECTION.
 
-    "! @parameter io_determination | central process->determination dispatcher.
-    "! @parameter io_logger | technical logger; defaults to the no-op logger.
-    methods constructor
-      importing
-        !io_determination type ref to zcra_cl_determination
-        !io_logger        type ref to zcra_if_logger optional .
+    "! @parameter determination | Zentraler Prozess->Determination-Dispatcher.
+    "! @parameter logger         | Technischer Logger; Standard ist der No-op-Logger.
+    METHODS constructor
+      IMPORTING
+        !determination TYPE REF TO zcra_cl_determination
+        !logger        TYPE REF TO zcra_if_logger OPTIONAL.
 
-    "! Pure run of the rule engine for one process over one context.
-    "! Flow (D-02, D-19, D-30): VALIDATION_PRE -> TRANSFORMATION -> VALIDATION_POST.
-    "! Each phase is skipped when its bucket is empty; the transform phase is
-    "! wrapped in a before/after context snapshot (D-16). A STOP request halts the
-    "! remaining rules of the current phase and skips all later phases; every
-    "! message collected so far is still returned.
-    "! @raising zcra_cx_rule_kind | a rule's KIND does not match its bucket (D-33).
-    methods run
-      importing
-        !iv_process       type zcra_d_process_id
-        !io_context       type ref to zcra_if_context_mut
-      returning
-        value(ro_result)  type ref to zcra_cl_result
-      raising
-        zcra_cx_rule_kind .
+    "! Reiner Lauf der Regel-Engine für einen Prozess über einen Kontext.
+    "! Ablauf (D-02, D-19, D-30): VALIDATION_PRE -> TRANSFORMATION -> VALIDATION_POST.
+    "! Jede Phase wird übersprungen, wenn ihr Bucket leer ist; die Transformationsphase
+    "! wird in einen Vorher/Nachher-Kontext-Snapshot eingefasst (D-16). Eine STOP-
+    "! Anforderung hält die restlichen Regeln der aktuellen Phase an und überspringt
+    "! alle späteren Phasen; alle bis dahin gesammelten Meldungen werden dennoch
+    "! zurückgegeben.
+    "! @parameter process | Prozesskennung.
+    "! @parameter context | Veränderbarer Kontext (alter/neuer Graph).
+    "! @parameter result  | Gesammelte Meldungen und STOP-Status.
+    "! @raising zcra_cx_rule_kind | die KIND einer Regel passt nicht zum Bucket (D-33).
+    METHODS run
+      IMPORTING
+        !process      TYPE zcra_d_process_id
+        !context      TYPE REF TO zcra_if_context_mut
+      RETURNING
+        VALUE(result) TYPE REF TO zcra_cl_result
+      RAISING
+        zcra_cx_rule_kind.
 
-  protected section.
-  private section.
+  PROTECTED SECTION.
+  PRIVATE SECTION.
 
-    data mo_det     type ref to zcra_cl_determination .
-    data mo_logger  type ref to zcra_if_logger .
-    data mo_context type ref to zcra_if_context_mut .
-    data mo_result  type ref to zcra_cl_result .
-    data mv_process type zcra_d_process_id .
+    DATA determination TYPE REF TO zcra_cl_determination.
+    DATA logger        TYPE REF TO zcra_if_logger.
+    DATA context       TYPE REF TO zcra_if_context_mut.
+    DATA result        TYPE REF TO zcra_cl_result.
+    DATA process       TYPE zcra_d_process_id.
 
-    methods run_phase
-      importing
-        !iv_type type zcra_if_c_rule_type=>ty_type
-      raising
-        zcra_cx_rule_kind .
+    METHODS run_phase
+      IMPORTING
+        !rule_type TYPE zcra_if_c_rule_type=>ty_type
+      RAISING
+        zcra_cx_rule_kind.
 
-    "! Assert rule KIND matches the expected KIND of the TYPE bucket (D-33).
-    methods assert_kind_vs_bucket
-      importing
-        !iv_type type zcra_if_c_rule_type=>ty_type
-        !is_meta type zcra_s_rule_meta
-      raising
-        zcra_cx_rule_kind .
+    "! Prüft, ob die KIND der Regel zur erwarteten KIND des TYPE-Buckets passt (D-33).
+    METHODS assert_kind_vs_bucket
+      IMPORTING
+        !rule_type TYPE zcra_if_c_rule_type=>ty_type
+        !meta      TYPE zcra_s_rule_meta
+      RAISING
+        zcra_cx_rule_kind.
 
-endclass.
+ENDCLASS.
 
 
 
-class zcra_cl_engine implementation.
+CLASS zcra_cl_engine IMPLEMENTATION.
 
-  method constructor.
-    mo_det = io_determination.
-    if io_logger is bound.
-      mo_logger = io_logger.
-    else.
-      mo_logger = zcra_cl_log_null=>get_instance( ).
-    endif.
-  endmethod.
+  METHOD constructor.
+    me->determination = determination.
+    IF logger IS BOUND.
+      me->logger = logger.
+    ELSE.
+      me->logger = zcra_cl_log_null=>get_instance( ).
+    ENDIF.
+  ENDMETHOD.
 
-  method run.
-    mo_context = io_context.
-    mv_process = iv_process.
-    mo_result  = new zcra_cl_result( ).
-    ro_result  = mo_result.
+  METHOD run.
+    me->context = context.
+    me->process = process.
+    me->result  = NEW zcra_cl_result( ).
+    result      = me->result.
 
-    mo_logger->start_run( iv_process = mv_process ).
+    me->logger->start_run( me->process ).
 
     run_phase( zcra_if_c_rule_type=>validation_pre ).
 
-    if mo_result->is_stop_requested( ) = abap_false
-       and mo_det->has_rules( iv_process = mv_process
-                              iv_type    = zcra_if_c_rule_type=>transformation ) = abap_true.
-      mo_logger->snapshot( iv_label = 'BEFORE' io_context = mo_context ).
+    IF me->result->is_stop_requested( ) = abap_false
+       AND me->determination->has_rules( process   = me->process
+                                         rule_type = zcra_if_c_rule_type=>transformation ) = abap_true.
+      me->logger->snapshot( label = 'BEFORE' context = me->context ).
       run_phase( zcra_if_c_rule_type=>transformation ).
-      mo_logger->snapshot( iv_label = 'AFTER' io_context = mo_context ).
-    endif.
+      me->logger->snapshot( label = 'AFTER' context = me->context ).
+    ENDIF.
 
-    if mo_result->is_stop_requested( ) = abap_false.
+    IF me->result->is_stop_requested( ) = abap_false.
       run_phase( zcra_if_c_rule_type=>validation_post ).
-    endif.
+    ENDIF.
 
-    mo_logger->end_run( iv_process = mv_process ).
-  endmethod.
+    me->logger->end_run( me->process ).
+  ENDMETHOD.
 
-  method run_phase.
-    loop at mo_det->get_rules( iv_process = mv_process iv_type = iv_type ) into data(lo_rule).
-      data(ls_meta) = lo_rule->get_meta( ).
-      assert_kind_vs_bucket( iv_type = iv_type is_meta = ls_meta ).
+  METHOD run_phase.
+    LOOP AT me->determination->get_rules( process   = me->process
+                                          rule_type = rule_type ) INTO DATA(rule).
+      DATA(meta) = rule->get_meta( ).
+      assert_kind_vs_bucket( rule_type = rule_type meta = meta ).
 
-      if lo_rule->exec_condition( io_context = mo_context ) = abap_false.
-        mo_logger->log_rule( is_meta = ls_meta iv_applicable = abap_false io_result = mo_result ).
-        continue.
-      endif.
+      IF rule->exec_condition( me->context ) = abap_false.
+        me->logger->log_rule( meta = meta applicable = abap_false result = me->result ).
+        CONTINUE.
+      ENDIF.
 
-      case iv_type.
-        when zcra_if_c_rule_type=>transformation.
-          lo_rule->transform( io_context = mo_context io_result = mo_result ).
-        when others.
-          lo_rule->validate( io_context = mo_context io_result = mo_result ).
-      endcase.
+      CASE rule_type.
+        WHEN zcra_if_c_rule_type=>transformation.
+          rule->transform( context = me->context result = me->result ).
+        WHEN OTHERS.
+          rule->validate( context = me->context result = me->result ).
+      ENDCASE.
 
-      mo_logger->log_rule( is_meta = ls_meta iv_applicable = abap_true io_result = mo_result ).
+      me->logger->log_rule( meta = meta applicable = abap_true result = me->result ).
 
-      if mo_result->is_stop_requested( ) = abap_true.
-        exit.
-      endif.
-    endloop.
-  endmethod.
+      " Bei STOP-Anforderung die restlichen Regeln dieser Phase abbrechen.
+      IF me->result->is_stop_requested( ) = abap_true.
+        EXIT.
+      ENDIF.
+    ENDLOOP.
+  ENDMETHOD.
 
-  method assert_kind_vs_bucket.
-    data lv_expected type zcra_s_rule_meta-kind.
-    case iv_type.
-      when zcra_if_c_rule_type=>transformation.
-        lv_expected = zcra_if_c_rule_kind=>transformation.
-      when others.
-        lv_expected = zcra_if_c_rule_kind=>validation.
-    endcase.
-    if is_meta-kind <> lv_expected.
-      raise exception type zcra_cx_rule_kind.
-    endif.
-  endmethod.
+  METHOD assert_kind_vs_bucket.
+    DATA expected_kind TYPE zcra_s_rule_meta-kind.
+    CASE rule_type.
+      WHEN zcra_if_c_rule_type=>transformation.
+        expected_kind = zcra_if_c_rule_kind=>transformation.
+      WHEN OTHERS.
+        expected_kind = zcra_if_c_rule_kind=>validation.
+    ENDCASE.
+    IF meta-kind <> expected_kind.
+      RAISE EXCEPTION TYPE zcra_cx_rule_kind.
+    ENDIF.
+  ENDMETHOD.
 
-endclass.
+ENDCLASS.

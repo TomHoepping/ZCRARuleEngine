@@ -1,9 +1,9 @@
 "! Ausführbare Beispiel-/Debug-Schablone für die ZCRA Rule Engine.
 "! In ADT ausführen: Rechtsklick -> Run As -> ABAP Application (Console) (F9).
-"! Verdrahtet das gesamte Framework Ende-zu-Ende und gibt Ergebnis + Engine-Trace
-"! aus, sodass Entwickler an beliebiger Stelle einen Breakpoint setzen und einen
-"! echten Lauf durchsteppen können:
-"!   Determination-Registry -> In-Memory-Logger -> Kontext -> engine->run( ).
+"! Delegiert die gesamte Verdrahtung an die Fassade ZCRA_CL_ENGINE_RUNNER und
+"! gibt Ergebnis + Engine-Trace aus, sodass Entwickler an beliebiger Stelle einen
+"! Breakpoint setzen und einen echten Lauf durchsteppen können:
+"!   Registry -> ZCRA_CL_ENGINE_RUNNER->run( ) -> Meldungen/Trace/Endzustand.
 "! Zum Integrieren der Engine diese Vorlage in die eigene Session/Klasse kopieren.
 CLASS zcra_cl_demo_run DEFINITION
   PUBLIC
@@ -13,7 +13,7 @@ CLASS zcra_cl_demo_run DEFINITION
   PUBLIC SECTION.
     INTERFACES if_oo_adt_classrun.
   PRIVATE SECTION.
-    "! Demo-Prozesskennung (beliebiger Wert; die Registry schlüsselt darauf).
+    "! Demo-Prozesskennung (die Registry schlüsselt darauf).
     CONSTANTS demo_process TYPE zcra_d_process_id VALUE 'EXAMPLE'.
 ENDCLASS.
 
@@ -23,67 +23,50 @@ CLASS zcra_cl_demo_run IMPLEMENTATION.
 
   METHOD if_oo_adt_classrun~main.
 
-    " 1) Zentrale Determination-Registry + die Demo-Prozess-Determination.
-    DATA(registry) = NEW zcra_cl_determination( ).
-    registry->register( process       = demo_process
-                        determination = NEW zcra_cl_det_example( ) ).
+    " 1) Fassade mit zentraler Registrierung und Konsolen-Trace (In-Memory).
+    "    Für persistente Protokollierung in SLG1 (Objekt ZCRA, Unterobjekt RUN)
+    "    stattdessen ZCRA_IF_C_LOG_MODE=>SLG1 übergeben; der Konsolen-Trace
+    "    entfällt dann (GET_TRACE_LINES liefert leer).
+    DATA(runner) = NEW zcra_cl_engine_runner(
+                         determination = zcra_cl_det_registry=>build( )
+                         log_mode      = zcra_if_c_log_mode=>console ).
 
-    " 2) Logger auswählen (als Interface typisiert, damit beide Varianten mit
-    "    derselben Variablen kompilieren). Der In-Memory-Logger erlaubt die
-    "    Ausgabe des Engine-Trace weiter unten. Für persistente Protokollierung
-    "    in SLG1 (Objekt ZCRA, Unterobjekt RUN) die BAL-Zeile aktivieren; der
-    "    Konsolen-Trace entfällt dann (siehe INSTANCE-OF-Prüfung in Schritt 7).
-    DATA(logger) = CAST zcra_if_logger( NEW zcra_cl_log_memory( ) ).
-    " DATA(logger) = CAST zcra_if_logger( NEW zcra_cl_log_bal( ) ).   " -> SLG1
+    " 2) Eingabegraph — leer; das Beispiel-Flag startet ungesetzt.
+    DATA(input_graph) = VALUE zcra_s_graph( ).
 
-    " 3) Kontext — leerer Graph; das Beispiel-Flag startet ungesetzt.
-    DATA(context) = NEW zcra_cl_context( ).
-
-    " 4) Engine (Logger ist optional; Standard ist der No-op-Logger).
-    DATA(engine) = NEW zcra_cl_engine( determination = registry
-                                       logger        = logger ).
-
-    " 5) Pipeline ausführen: VALIDATION_PRE -> TRANSFORMATION -> VALIDATION_POST.
+    " 3) Pipeline ausführen: VALIDATION_PRE -> TRANSFORMATION -> VALIDATION_POST.
     out->write( |=== ZCRA Rule Engine Demo: Prozess { demo_process } ===| ).
     DATA result TYPE REF TO zcra_cl_result.
     TRY.
-        result = engine->run( process = demo_process
-                              context = context ).
+        result = runner->run( input_graph = input_graph
+                              process      = demo_process ).
       CATCH zcra_cx_rule_kind INTO DATA(kind_error).
         out->write( |FEHLER - KIND/Bucket-Konflikt: { kind_error->get_text( ) }| ).
         RETURN.
     ENDTRY.
 
-    " 6) Ergebnis-Meldungen.
+    " 4) Ergebnis-Meldungen.
     out->write( |--- Ergebnis-Meldungen ({ lines( result->get_messages( ) ) }) ---| ).
     LOOP AT result->get_messages( ) INTO DATA(message).
       out->write( |{ message-type }  { message-id }/{ message-number }  { message-message_v1 }| ).
     ENDLOOP.
     out->write( |STOP angefordert: { result->is_stop_requested( ) }   Fehler: { result->has_errors( ) }| ).
 
-    " 7) Engine-Trace — nur beim In-Memory-Logger verfügbar. Der BAL-Logger
-    "    schreibt stattdessen nach SLG1 (Transaktion SLG1, Objekt ZCRA/RUN) und
-    "    stellt die Ereignisse nicht im Speicher bereit.
-    IF logger IS INSTANCE OF zcra_cl_log_memory.
-      DATA(memory_logger) = CAST zcra_cl_log_memory( logger ).
-      out->write( `--- Engine-Trace ---` ).
-      LOOP AT memory_logger->get_entries( ) INTO DATA(entry).
-        CASE entry-event.
-          WHEN zcra_cl_log_memory=>gc_event-rule.
-            out->write( |RULE      { entry-rule_id } (KIND { entry-kind }) applicable={ entry-applicable } msgs={ entry-msg_count }| ).
-          WHEN zcra_cl_log_memory=>gc_event-snapshot.
-            out->write( |SNAPSHOT  { entry-label }| ).
-          WHEN OTHERS.
-            out->write( |{ entry-event }| ).
-        ENDCASE.
-      ENDLOOP.
+    " 5) Engine-Trace — nur im Modus CONSOLE gefüllt. Der Modus SLG1 schreibt
+    "    stattdessen nach SLG1 (Transaktion SLG1, Objekt ZCRA/RUN).
+    DATA(trace_lines) = runner->get_trace_lines( ).
+    IF trace_lines IS INITIAL.
+      out->write( `--- Engine-Trace: nur im Modus CONSOLE verfügbar (SLG1 -> Objekt ZCRA/RUN) ---` ).
     ELSE.
-      out->write( `--- Engine-Trace: nur mit In-Memory-Logger verfügbar (BAL -> SLG1, Objekt ZCRA/RUN) ---` ).
+      out->write( `--- Engine-Trace ---` ).
+      LOOP AT trace_lines INTO DATA(trace_line).
+        out->write( trace_line ).
+      ENDLOOP.
     ENDIF.
 
-    " 8) Endzustand des Kontexts — die Transformation hat das Beispiel-Flag gekippt.
-    out->write( `--- Endzustand Kontext ---` ).
-    out->write( |Beispiel-Flag = '{ context->zcra_if_context~get_new_graph( )-shell_placeholder }'| ).
+    " 6) Endzustand des Graphen — die Transformation hat das Beispiel-Flag gekippt.
+    out->write( `--- Endzustand Graph ---` ).
+    out->write( |Beispiel-Flag = '{ runner->get_result_graph( )-shell_placeholder }'| ).
 
   ENDMETHOD.
 

@@ -11,11 +11,11 @@ class ltc_engine definition final
     methods setup.
     methods build importing io_det type ref to zcra_if_determination.
 
-    methods runs_phases_in_order   for testing.
-    methods skips_empty_transform  for testing.
-    methods stop_short_circuits    for testing.
-    methods accumulates_messages   for testing.
-    methods inapplicable_skipped   for testing.
+    methods runs_phases_in_order   for testing raising cx_static_check.
+    methods skips_empty_transform  for testing raising cx_static_check.
+    methods stop_short_circuits    for testing raising cx_static_check.
+    methods accumulates_messages   for testing raising cx_static_check.
+    methods inapplicable_skipped   for testing raising cx_static_check.
     methods kind_bucket_mismatch   for testing raising cx_static_check.
 endclass.
 

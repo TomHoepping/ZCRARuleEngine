@@ -6,9 +6,61 @@
     <TABNAME>ZCRA_S_GRAPH</TABNAME>
     <TABCLASS>INTTAB</TABCLASS>
     <MASTERLANG>E</MASTERLANG>
+    <DDTEXT>CRA Rule Engine: Person/Relation Graph (draft)</DDTEXT>
     <EXCLASS>4</EXCLASS>
    </DD02V>
    <DD03P_TABLE>
+    <DD03P>
+     <FIELDNAME>PROCESS_ID</FIELDNAME>
+     <ROLLNAME>ZCRA_D_PROCESS_ID</ROLLNAME>
+     <ADMINFIELD>0</ADMINFIELD>
+     <COMPTYPE>E</COMPTYPE>
+     <DDTEXT>Process id (context)</DDTEXT>
+    </DD03P>
+    <DD03P>
+     <FIELDNAME>MAIN_PARTNER</FIELDNAME>
+     <ROLLNAME>ZCRA_S_PERSON</ROLLNAME>
+     <ADMINFIELD>0</ADMINFIELD>
+     <COMPTYPE>S</COMPTYPE>
+     <DDTEXT>Main partner (root node)</DDTEXT>
+    </DD03P>
+    <DD03P>
+     <FIELDNAME>RELATIONS</FIELDNAME>
+     <ROLLNAME>ZCRA_T_RELATION</ROLLNAME>
+     <ADMINFIELD>0</ADMINFIELD>
+     <COMPTYPE>L</COMPTYPE>
+     <DDTEXT>Relations (spouse/children/parents)</DDTEXT>
+    </DD03P>
+    <DD03P>
+     <FIELDNAME>FLAG_OPEN_ISSUE</FIELDNAME>
+     <ADMINFIELD>0</ADMINFIELD>
+     <INTTYPE>C</INTTYPE>
+     <INTLEN>000002</INTLEN>
+     <DATATYPE>CHAR</DATATYPE>
+     <LENG>000001</LENG>
+     <MASK>  CHAR</MASK>
+     <DDTEXT>Ext fact: open issue (pre-loaded by caller)</DDTEXT>
+    </DD03P>
+    <DD03P>
+     <FIELDNAME>FLAG_IN_EUMZUG2</FIELDNAME>
+     <ADMINFIELD>0</ADMINFIELD>
+     <INTTYPE>C</INTTYPE>
+     <INTLEN>000002</INTLEN>
+     <DATATYPE>CHAR</DATATYPE>
+     <LENG>000001</LENG>
+     <MASK>  CHAR</MASK>
+     <DDTEXT>Ext fact: already in eUmzug2 (pre-loaded)</DDTEXT>
+    </DD03P>
+    <DD03P>
+     <FIELDNAME>FLAG_INCOMPLETE_EWEGZUG</FIELDNAME>
+     <ADMINFIELD>0</ADMINFIELD>
+     <INTTYPE>C</INTTYPE>
+     <INTLEN>000002</INTLEN>
+     <DATATYPE>CHAR</DATATYPE>
+     <LENG>000001</LENG>
+     <MASK>  CHAR</MASK>
+     <DDTEXT>Ext fact: incomplete eWegzug (pre-loaded)</DDTEXT>
+    </DD03P>
     <DD03P>
      <FIELDNAME>SHELL_PLACEHOLDER</FIELDNAME>
      <ADMINFIELD>0</ADMINFIELD>
@@ -17,7 +69,7 @@
      <DATATYPE>CHAR</DATATYPE>
      <LENG>000001</LENG>
      <MASK>  CHAR</MASK>
-     <DDTEXT>Placeholder - replaced by /CRA/ + BuPa appends</DDTEXT>
+     <DDTEXT>Demo scratch flag (kept for example rules)</DDTEXT>
     </DD03P>
    </DD03P_TABLE>
    <I18N_LANGS>
@@ -26,7 +78,7 @@
    <DD02_TEXTS>
     <item>
      <DDLANGUAGE>E</DDLANGUAGE>
-     <DDTEXT>CRA Rule Engine: Person/Relation Graph (interim shell)</DDTEXT>
+     <DDTEXT>CRA Rule Engine: Person/Relation Graph (draft)</DDTEXT>
     </item>
    </DD02_TEXTS>
   </asx:values>

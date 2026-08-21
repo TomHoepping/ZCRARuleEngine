@@ -44,10 +44,10 @@ endclass.
 
 class lcl_det implementation.
   method zcra_if_determination~has_rules.
-    rv_has = xsdbool( iv_kind = zcra_if_c_rule_kind=>validation ).
+    rv_has = xsdbool( iv_type = zcra_if_c_rule_type=>validation_pre ).
   endmethod.
   method zcra_if_determination~get_rules.
-    if iv_kind = zcra_if_c_rule_kind=>validation.
+    if iv_type = zcra_if_c_rule_type=>validation_pre.
       append cast zcra_if_rule( new lcl_rule( 'R1' ) ) to rt_rules.
       append cast zcra_if_rule( new lcl_rule( 'R2' ) ) to rt_rules.
     endif.
@@ -66,24 +66,24 @@ class ltc_determination implementation.
   method unknown_process_empty.
     cl_abap_unit_assert=>assert_false(
       mo_cut->has_rules( iv_process = zcra_if_c_process=>wegzug
-                         iv_kind    = zcra_if_c_rule_kind=>validation ) ).
+                         iv_type    = zcra_if_c_rule_type=>validation_pre ) ).
     cl_abap_unit_assert=>assert_initial(
       mo_cut->get_rules( iv_process = zcra_if_c_process=>wegzug
-                         iv_kind    = zcra_if_c_rule_kind=>validation ) ).
+                         iv_type    = zcra_if_c_rule_type=>validation_pre ) ).
   endmethod.
 
   method registered_has_rules.
     cl_abap_unit_assert=>assert_true(
       mo_cut->has_rules( iv_process = zcra_if_c_process=>anerkennung
-                         iv_kind    = zcra_if_c_rule_kind=>validation ) ).
+                         iv_type    = zcra_if_c_rule_type=>validation_pre ) ).
     cl_abap_unit_assert=>assert_false(
       mo_cut->has_rules( iv_process = zcra_if_c_process=>anerkennung
-                         iv_kind    = zcra_if_c_rule_kind=>transformation ) ).
+                         iv_type    = zcra_if_c_rule_type=>transformation ) ).
   endmethod.
 
   method get_rules_ordered.
     data(lt_rules) = mo_cut->get_rules( iv_process = zcra_if_c_process=>anerkennung
-                                        iv_kind    = zcra_if_c_rule_kind=>validation ).
+                                        iv_type    = zcra_if_c_rule_type=>validation_pre ).
     cl_abap_unit_assert=>assert_equals( act = lines( lt_rules ) exp = 2 ).
 
     data(lo_first)  = lt_rules[ 1 ].

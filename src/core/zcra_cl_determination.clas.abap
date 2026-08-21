@@ -12,20 +12,20 @@ class zcra_cl_determination definition
         !iv_process type zcra_d_process_id
         !io_det     type ref to zcra_if_determination .
 
-    "! Whether the process provides rules for the given kind.
+    "! Whether the process provides rules for the given TYPE bucket.
     methods has_rules
       importing
         !iv_process   type zcra_d_process_id
-        !iv_kind      type zcra_s_rule_meta-kind
+        !iv_type      type zcra_if_c_rule_type=>ty_type
       returning
         value(rv_has) type abap_bool .
 
-    "! Ordered rule instances for the process + kind. Empty if the process is
-    "! not registered.
+    "! Ordered rule instances for the process + TYPE bucket. Empty if the
+    "! process is not registered.
     methods get_rules
       importing
         !iv_process     type zcra_d_process_id
-        !iv_kind        type zcra_s_rule_meta-kind
+        !iv_type        type zcra_if_c_rule_type=>ty_type
       returning
         value(rt_rules) type zcra_if_determination=>tt_rules .
 
@@ -70,14 +70,14 @@ class zcra_cl_determination implementation.
   method has_rules.
     data(lo_det) = find( iv_process ).
     if lo_det is bound.
-      rv_has = lo_det->has_rules( iv_kind ).
+      rv_has = lo_det->has_rules( iv_type ).
     endif.
   endmethod.
 
   method get_rules.
     data(lo_det) = find( iv_process ).
     if lo_det is bound.
-      rt_rules = lo_det->get_rules( iv_kind ).
+      rt_rules = lo_det->get_rules( iv_type ).
     endif.
   endmethod.
 

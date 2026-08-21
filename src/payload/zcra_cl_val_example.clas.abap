@@ -30,10 +30,9 @@ class zcra_cl_val_example implementation.
     data(ls_new) = io_context->get_new_graph( ).
     if ls_new-shell_placeholder is initial.
       io_result->add_message(
-        iv_type       = 'I'
-        iv_id         = 'ZCRA_ENGINE'
-        iv_number     = '000'
-        iv_message_v1 = 'sample flag is not set' ).
+        iv_type   = 'I'
+        iv_id     = 'ZCRA_ENGINE'
+        iv_number = '010' ).
     endif.
   endmethod.
 

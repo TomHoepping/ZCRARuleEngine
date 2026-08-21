@@ -32,8 +32,8 @@ class zcra_cl_trn_example implementation.
     io_result->add_message(
       iv_type       = 'I'
       iv_id         = 'ZCRA_ENGINE'
-      iv_number     = '000'
-      iv_message_v1 = 'sample flag set to X' ).
+      iv_number     = '011'
+      iv_message_v1 = |{ lr_new->shell_placeholder }| ).
   endmethod.
 
 endclass.
